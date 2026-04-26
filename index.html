@@ -143,7 +143,7 @@
             const item = items.find(i => i.id === id);
             if (item) {
                 item[field] = value;
-                calculateTotal(); // 실시간으로 총 합계 업데이트
+                calculateTotal();
             }
         };
 
@@ -295,8 +295,8 @@
             tbody.innerHTML = '';
             filteredItems.forEach((it, idx) => {
                 tbody.innerHTML += `
-                    <tr class="h-[42px] text-[12px]">
-                        <td class="border border-black text-center py-1.5">${idx + 1}</td>
+                    <tr class="h-[38px] text-[12px]">
+                        <td class="border border-black text-center py-1">${idx + 1}</td>
                         <td class="border border-black text-left px-4 font-bold">${it.n}</td>
                         <td class="border border-black text-center">${it.q}</td>
                         <td class="border border-black text-right px-3">${it.sp.toLocaleString()}</td>
@@ -306,10 +306,10 @@
                 `;
             });
 
-            // 기본 8행을 보장하기 위해 빈 행 추가
+            // 기본 8행 설정
             const baseRowCount = 8;
             for(let i = filteredItems.length; i < baseRowCount; i++) {
-                tbody.innerHTML += `<tr class="h-[42px] text-[12px]"><td class="border border-black text-center text-slate-200">${i+1}</td><td class="border border-black"></td><td class="border border-black"></td><td class="border border-black"></td><td class="border border-black"></td><td class="border border-black"></td></tr>`;
+                tbody.innerHTML += `<tr class="h-[38px] text-[12px]"><td class="border border-black text-center text-slate-200">${i+1}</td><td class="border border-black"></td><td class="border border-black"></td><td class="border border-black"></td><td class="border border-black"></td><td class="border border-black"></td></tr>`;
             }
 
             document.getElementById('p-subtotal').textContent = subtotal.toLocaleString();
@@ -373,41 +373,48 @@
 
     <style>
         @media print {
-            body { background: white !important; -webkit-print-color-adjust: exact !important; }
+            /* 브라우저 기본 여백 제거 및 PDF 크기 고정 */
+            @page { 
+                size: A4; 
+                margin: 10mm; 
+            }
+            body { 
+                background: white !important; 
+                -webkit-print-color-adjust: exact !important; 
+            }
             body * { visibility: hidden; }
+            #notification, header, aside, .sticky { display: none !important; }
+
+            /* 인쇄 영역 표시 */
             #print-area, #print-area * { visibility: visible; }
             #print-area { 
                 position: absolute; 
                 left: 0; 
                 top: 0; 
-                width: 210mm; 
+                width: 190mm; /* 여백 제외 실 출력 폭 */
                 margin: 0; 
-                padding: 0; 
-                background: white !important;
+                padding: 0;
             }
+            
             .print-page-shadow { 
                 box-shadow: none !important; 
                 border: none !important; 
                 width: 100% !important; 
                 min-height: auto !important; 
-                padding: 10mm 15mm !important; 
+                padding: 0 !important;
                 margin: 0 !important;
             }
-            @page { size: A4; margin: 0; }
-            
-            /* 테이블 헤더가 페이지마다 반복되지 않도록 설정 (브라우저 기본값 방지) */
+
+            /* 2페이지부터 헤더 반복 방지 */
             thead { display: table-header-group; }
-            tfoot { display: table-footer-group; }
             
+            /* 하단 정보 묶음 잘림 방지 */
             .print-footer-container {
                 page-break-inside: avoid;
-            }
-
-            /* 제목 및 사업자 정보가 있는 헤더 섹션은 첫 페이지에만 표시 */
-            .print-first-page-only {
-                display: block;
+                margin-top: 10mm;
             }
         }
+        
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
@@ -452,7 +459,6 @@
 
     <!-- Main App Content -->
     <div id="main-app" class="hidden">
-        <!-- Header -->
         <header class="max-w-6xl mx-auto p-6 flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="flex items-center gap-4">
                 <div class="bg-blue-600 p-3 rounded-2xl text-white shadow-lg shadow-blue-200">
@@ -478,7 +484,6 @@
 
         <main class="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-4 gap-8">
             <div class="lg:col-span-3 space-y-6">
-                <!-- Form Section -->
                 <section class="bg-white p-8 md:p-10 rounded-[32px] border border-slate-200 shadow-sm relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-2 h-full bg-blue-600"></div>
                     
@@ -523,7 +528,6 @@
                     </button>
                 </section>
 
-                <!-- Total Section -->
                 <div class="bg-slate-900 rounded-[32px] p-10 text-white flex flex-col md:flex-row justify-between items-center gap-8 shadow-2xl relative overflow-hidden">
                     <div class="absolute top-0 right-0 w-64 h-64 bg-blue-500 blur-[120px] opacity-20 pointer-events-none"></div>
                     <div class="relative z-10">
@@ -540,15 +544,12 @@
                 </div>
             </div>
 
-            <!-- Sidebar Repository -->
             <aside class="space-y-6">
                 <div class="bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm">
                     <h3 class="font-black text-lg mb-6 flex items-center gap-2 text-slate-800 uppercase tracking-tight">
                         <i data-lucide="history" class="text-blue-600" style="width:20px"></i> 보관함
                     </h3>
-                    <div id="repo-container" class="space-y-3 max-h-[700px] overflow-y-auto pr-2 custom-scrollbar">
-                        <!-- Loaded dynamically -->
-                    </div>
+                    <div id="repo-container" class="space-y-3 max-h-[700px] overflow-y-auto pr-2 custom-scrollbar"></div>
                 </div>
                 
                 <div class="p-6 bg-slate-100 rounded-[32px] border border-slate-200">
@@ -579,48 +580,45 @@
         </div>
 
         <div id="print-area" class="flex justify-center p-8 md:p-12">
-            <div class="bg-white shadow-2xl relative print-page-shadow" style="width: 210mm; min-height: auto; padding: 15mm 15mm;">
-                <!-- 첫 페이지에만 표시되는 섹션 -->
+            <div class="bg-white shadow-2xl relative print-page-shadow" style="width: 210mm; min-height: auto; padding: 10mm 15mm;">
                 <div class="print-first-page-only">
-                    <h1 id="p-title" class="text-center font-black underline underline-offset-[12px] decoration-4 mb-16 tracking-[20px] text-5xl uppercase">견 적 서</h1>
+                    <h1 id="p-title" class="text-center font-black underline underline-offset-[12px] decoration-4 mb-10 tracking-[20px] text-5xl uppercase">견 적 서</h1>
 
-                    <div class="flex justify-between items-start mb-12">
+                    <div class="flex justify-between items-start mb-8">
                         <div class="w-[48%] pt-2">
                             <div class="text-3xl font-black border-b-[3px] border-black inline-block pb-1 pr-10 mb-4">
                                 <span id="p-client">귀하</span> <span class="text-xl font-normal ml-2">귀하</span>
                             </div>
                             <div id="p-date" class="text-xl font-bold text-slate-600">2023년 05월 01일</div>
-                            <p class="text-sm text-slate-500 mt-6 leading-relaxed text-[12px]">아래와 같이 견적/명세합니다.</p>
+                            <p class="text-sm text-slate-500 mt-4 leading-relaxed text-[12px]">아래와 같이 견적/명세합니다.</p>
                         </div>
 
                         <div class="w-[400px]">
                             <table class="w-full border-collapse border-[1.5px] border-black text-[12px] table-fixed">
                                 <tbody>
                                     <tr>
-                                        <td class="border border-black bg-slate-50 font-black text-center w-20 py-2.5">사업자번호</td>
+                                        <td class="border border-black bg-slate-50 font-black text-center w-20 py-2">사업자번호</td>
                                         <td colSpan="3" class="border border-black text-center font-black text-[12px] tracking-widest">322-15-02616</td>
                                     </tr>
                                     <tr>
-                                        <td class="border border-black bg-slate-50 font-black text-center py-2.5">상 호</td>
+                                        <td class="border border-black bg-slate-50 font-black text-center py-2">상 호</td>
                                         <td class="border border-black text-center font-bold px-1 break-keep leading-tight">메이스튜디오</td>
                                         <td class="border border-black bg-slate-50 font-black text-center w-14">성 명</td>
-                                        <td class="border border-black text-center relative py-2.5 overflow-visible">
+                                        <td class="border border-black text-center relative py-2 overflow-visible">
                                             <span class="font-bold mr-8 text-[12px]">정윤희</span> 
                                             <span class="relative z-10 text-[10px] pl-1">(인)</span>
-                                            <img src="stamp.png" alt="도장" class="absolute top-1/2 right-1 -translate-y-1/2 w-11 h-11 object-contain pointer-events-none z-20 opacity-90 rotate-12">
+                                            <img src="stamp.png" alt="도장" class="absolute top-1/2 right-1 -translate-y-1/2 w-10 h-10 object-contain pointer-events-none z-20 opacity-90 rotate-12">
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td class="border border-black bg-slate-50 font-black text-center py-2.5">주 소</td>
-                                        <td colSpan="3" class="border border-black text-left px-3 text-[12px] py-2 leading-tight break-keep">창원시 성산구 중앙대로 33 대흥인터빌 519호</td>
+                                        <td class="border border-black bg-slate-50 font-black text-center py-2">주 소</td>
+                                        <td colSpan="3" class="border border-black text-left px-3 text-[11px] py-1.5 leading-tight break-keep">창원시 성산구 중앙대로 33 대흥인터빌 519호</td>
                                     </tr>
                                     <tr>
-                                        <td class="border border-black bg-slate-50 font-black text-center py-2.5">연락처</td>
+                                        <td class="border border-black bg-slate-50 font-black text-center py-2">연락처</td>
                                         <td class="border border-black text-center font-bold text-[12px]">010-3560-5859</td>
                                         <td class="border border-black bg-slate-50 font-black text-center">이메일</td>
-                                        <td class="border border-black text-center text-[12px] px-1 leading-tight break-all">
-                                            contact<br>@maystudio.kr
-                                        </td>
+                                        <td class="border border-black text-center text-[11px] px-1 leading-tight break-all">contact<br>@maystudio.kr</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -628,42 +626,38 @@
                     </div>
                 </div>
 
-                <!-- 메인 품목 테이블 -->
-                <table class="w-full border-collapse border-[1.5px] border-black text-[12px] mb-8">
-                    <thead><tr class="bg-slate-100"><th class="border border-black py-3 w-12 font-black text-center">번호</th><th class="border border-black font-black text-center">품목 및 과업내용</th><th class="border border-black w-16 font-black text-center">수량</th><th class="border border-black w-28 font-black text-center">단가(원)</th><th class="border border-black w-36 font-black text-center">금액(원)</th><th class="border border-black w-20 font-black text-center">비고</th></tr></thead>
+                <table class="w-full border-collapse border-[1.5px] border-black text-[12px] mb-6">
+                    <thead><tr class="bg-slate-100"><th class="border border-black py-2 w-12 font-black text-center">번호</th><th class="border border-black font-black text-center">품목 및 과업내용</th><th class="border border-black w-16 font-black text-center">수량</th><th class="border border-black w-28 font-black text-center">단가(원)</th><th class="border border-black w-36 font-black text-center">금액(원)</th><th class="border border-black w-20 font-black text-center">비고</th></tr></thead>
                     <tbody id="p-items-body"></tbody>
                     <tfoot>
-                        <tr class="h-[45px] bg-slate-50 text-[12px]">
+                        <tr class="h-[40px] bg-slate-50 text-[12px]">
                             <td colSpan="4" class="border border-black text-right pr-8 font-bold text-slate-500 tracking-wider">소계 (공급가액)</td>
                             <td id="p-subtotal" colSpan="2" class="border border-black text-right px-3 font-bold">0</td>
                         </tr>
-                        <tr class="h-[45px] bg-slate-50 text-[12px]">
+                        <tr class="h-[40px] bg-slate-50 text-[12px]">
                             <td colSpan="4" class="border border-black text-right pr-8 font-bold text-slate-500 tracking-wider">부가가치세 (10%)</td>
                             <td id="p-tax" colSpan="2" class="border border-black text-right px-3 font-bold">0</td>
                         </tr>
-                        <tr class="h-[60px] bg-slate-100 text-[12px]">
+                        <tr class="h-[55px] bg-slate-100 text-[12px]">
                             <td colSpan="4" class="border border-black text-right pr-8 font-black text-xl tracking-wider">합계 금액 (VAT 포함)</td>
                             <td id="p-total" colSpan="2" class="border border-black text-right px-3 font-black text-2xl text-blue-700">0</td>
                         </tr>
                     </tfoot>
                 </table>
 
-                <!-- 하단 정보 섹션 -->
                 <div class="print-footer-container">
-                    <div class="mt-8">
-                        <div class="p-6 border-2 border-slate-900 rounded-3xl font-black bg-slate-50 flex items-center justify-between gap-6 mb-8">
-                            <div class="flex items-center gap-4"><span class="bg-slate-900 text-white px-3 py-1 rounded-lg text-xs uppercase tracking-tight">입금 계좌 정보</span><span class="text-lg">농협 302-1456-7890-11 (예금주: 정윤희)</span></div>
-                        </div>
-                        <div class="grid grid-cols-[1.5fr_0.5fr] gap-10">
-                            <div class="space-y-4">
-                                <h5 class="text-[11px] font-black text-slate-400 uppercase tracking-widest">참고 및 유의사항</h5>
-                                <ul class="text-[10px] text-slate-500 space-y-1.5 list-disc pl-5 font-medium leading-relaxed">
-                                    <li>본 문서는 발행일로부터 30일간 유효합니다.</li>
-                                    <li class="whitespace-nowrap">작업 범위가 협의 내용보다 확장될 경우 추가 견적이 발생할 수 있습니다.</li>
-                                    <li>최종 결과물의 저작권은 잔금 지급이 완료된 시점에 클라이언트에게 귀속됩니다.</li>
-                                    <li>시안 확정 및 작업 착수 후에는 단순 변심으로 인한 환불이 불가합니다.</li>
-                                </ul>
-                            </div>
+                    <div class="p-6 border-2 border-slate-900 rounded-3xl font-black bg-slate-50 flex items-center justify-between gap-6 mb-6">
+                        <div class="flex items-center gap-4"><span class="bg-slate-900 text-white px-3 py-1 rounded-lg text-xs uppercase tracking-tight">입금 계좌 정보</span><span class="text-lg">농협 302-1456-7890-11 (예금주: 정윤희)</span></div>
+                    </div>
+                    <div class="grid grid-cols-[1.5fr_0.5fr] gap-10">
+                        <div class="space-y-4">
+                            <h5 class="text-[11px] font-black text-slate-400 uppercase tracking-widest">참고 및 유의사항</h5>
+                            <ul class="text-[11px] text-slate-500 space-y-1 list-disc pl-5 font-medium leading-relaxed">
+                                <li>본 문서는 발행일로부터 30일간 유효합니다.</li>
+                                <li class="whitespace-nowrap">작업 범위가 협의 내용보다 확장될 경우 추가 견적이 발생할 수 있습니다.</li>
+                                <li>최종 결과물의 저작권은 잔금 지급이 완료된 시점에 클라이언트에게 귀속됩니다.</li>
+                                <li>시안 확정 및 작업 착수 후에는 단순 변심으로 인한 환불이 불가합니다.</li>
+                            </ul>
                         </div>
                     </div>
                 </div>
