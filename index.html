@@ -143,7 +143,7 @@
             const item = items.find(i => i.id === id);
             if (item) {
                 item[field] = value;
-                calculateTotal();
+                calculateTotal(); // 실시간 UI 업데이트
             }
         };
 
@@ -306,7 +306,7 @@
                 `;
             });
 
-            // 페이지 조절을 위해 기본 빈 줄 개수를 8개로 설정
+            // 1페이지 최적화를 위한 8행 고정
             const baseRowCount = 8;
             for(let i = filteredItems.length; i < baseRowCount; i++) {
                 tbody.innerHTML += `<tr class="h-[36px] text-[12px]"><td class="border border-black text-center text-slate-200">${i+1}</td><td class="border border-black"></td><td class="border border-black"></td><td class="border border-black"></td><td class="border border-black"></td><td class="border border-black"></td></tr>`;
@@ -370,7 +370,7 @@
 
     <style>
         @media print {
-            /* 브라우저 기본 헤더/푸터(URL 주소) 강제 제거 */
+            /* 브라우저 기본 헤더/푸터 강제 제거 */
             @page { 
                 size: A4; 
                 margin: 0; 
@@ -382,8 +382,6 @@
                 -webkit-print-color-adjust: exact !important;
             }
             body * { visibility: hidden; }
-            
-            /* UI 요소 숨기기 */
             #notification, header, aside, .sticky, #login-overlay { display: none !important; }
 
             /* 인쇄 영역 설정 */
@@ -402,14 +400,19 @@
                 border: none !important; 
                 width: 100% !important; 
                 min-height: 297mm !important; 
-                padding: 18mm 15mm !important; /* 상하 여백을 줄여 1페이지 최적화 */
+                padding: 12mm 15mm !important; /* 상단 여백을 줄여 1페이지 안착 유도 */
                 margin: 0 !important;
                 box-sizing: border-box;
             }
 
-            /* 2페이지부터 헤더가 반복되지 않도록 본문 구조만 출력 */
-            .print-first-page-only { display: block; }
-            .print-footer-container { page-break-inside: avoid; }
+            /* 하단 정보 섹션 잘림 방지 */
+            .print-footer-container { 
+                page-break-inside: avoid; 
+                margin-top: 5mm;
+            }
+
+            /* 테이블 헤더는 2페이지부터 반복 가능하게 설정 (브라우저 기본 사양에 따라 다름) */
+            thead { display: table-header-group; }
         }
         
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
@@ -424,10 +427,10 @@
     <!-- Login Overlay -->
     <div id="login-overlay" class="fixed inset-0 z-[500] bg-slate-900 flex items-center justify-center p-6">
         <div class="bg-white w-full max-w-md p-10 rounded-[40px] shadow-2xl text-center">
-            <div class="bg-blue-600 w-20 h-20 rounded-3xl mx-auto mb-8 flex items-center justify-center text-white">
+            <div class="bg-blue-600 w-20 h-20 rounded-3xl mx-auto mb-8 flex items-center justify-center text-white shadow-xl">
                 <i data-lucide="lock" style="width:40px; height:40px"></i>
             </div>
-            <h2 class="text-3xl font-black mb-2 text-slate-900">MAY STUDIO</h2>
+            <h2 class="text-3xl font-black mb-2 text-slate-900 tracking-tight">MAY STUDIO</h2>
             <p class="text-slate-400 text-sm font-bold mb-10">관리자 전용 시스템 로그인</p>
             <form onsubmit="handleLogin(event)" class="space-y-4">
                 <input id="login-email" type="email" placeholder="이메일 주소" required class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-100 outline-none font-bold">
@@ -449,13 +452,13 @@
                     <h1 class="text-2xl font-black text-slate-900 tracking-tight">MAY STUDIO</h1>
                     <div class="flex items-center gap-2">
                         <span id="user-email-display" class="text-[10px] text-blue-500 font-black uppercase">ADMIN</span>
-                        <button onclick="handleLogout()" class="text-[9px] bg-slate-100 px-2 py-0.5 rounded-full font-black text-slate-400">로그아웃</button>
+                        <button onclick="handleLogout()" class="text-[9px] bg-slate-100 px-2 py-0.5 rounded-full font-black text-slate-400 hover:text-red-500">로그아웃</button>
                     </div>
                 </div>
             </div>
             <div class="flex gap-2">
-                <button onclick="createNew()" class="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold active:scale-95"><i data-lucide="plus" style="width:16px"></i> 새 문서</button>
-                <button onclick="handleSave()" class="flex items-center gap-2 px-7 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold shadow-xl active:scale-95"><i data-lucide="save" style="width:16px"></i> 문서 저장</button>
+                <button onclick="createNew()" class="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all active:scale-95"><i data-lucide="plus" style="width:16px"></i> 새 문서</button>
+                <button onclick="handleSave()" class="flex items-center gap-2 px-7 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all shadow-xl active:scale-95"><i data-lucide="save" style="width:16px"></i> 문서 저장</button>
             </div>
         </header>
 
@@ -466,10 +469,10 @@
                     <div class="mb-10 bg-slate-50 p-6 rounded-2xl flex flex-col md:flex-row md:items-center gap-6">
                         <div class="flex-1">
                             <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">과업 명칭 (보관용 제목)</label>
-                            <input id="doc-title" type="text" placeholder="예: 브랜드 아이덴티티 구축 및 매뉴얼" class="w-full bg-transparent border-b-2 border-slate-200 py-1 focus:border-blue-600 outline-none font-bold text-lg text-slate-800">
+                            <input id="doc-title" type="text" placeholder="예: 브랜드 디자인 및 패키지 개발" class="w-full bg-transparent border-b-2 border-slate-200 py-1 focus:border-blue-600 outline-none font-bold text-lg text-slate-800">
                         </div>
                         <div class="md:w-64 px-4 py-2 bg-blue-100/50 rounded-xl border border-blue-100">
-                            <span class="text-[9px] font-black text-blue-400 block mb-1 uppercase">저장 파일명 미리보기</span>
+                            <span class="text-[9px] font-black text-blue-400 block mb-1 uppercase">파일명 미리보기</span>
                             <p id="live-title-preview" class="text-xs font-bold text-blue-700 truncate italic">230501_업체명_과업명</p>
                         </div>
                     </div>
@@ -481,37 +484,37 @@
                         </div>
                         <div>
                             <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block ml-1">발행 일자</label>
-                            <input id="invoice-date" type="date" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-100 outline-none font-medium">
+                            <input id="invoice-date" type="date" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-100 outline-none font-medium text-slate-600">
                         </div>
                     </div>
 
                     <div class="flex justify-between items-center mb-6">
                         <h3 class="font-black text-xl flex items-center gap-2"><i data-lucide="database" class="text-blue-600"></i> 과업 상세 항목</h3>
-                        <div class="flex bg-slate-100 p-1 rounded-xl">
-                            <button id="vat-exclude-btn" onclick="setVatMode('exclude')" class="px-4 py-2 rounded-lg text-xs font-black transition-all bg-white shadow-sm text-blue-600">VAT 별도</button>
-                            <button id="vat-include-btn" onclick="setVatMode('include')" class="px-4 py-2 rounded-lg text-xs font-black transition-all text-slate-500">VAT 포함</button>
+                        <div class="flex bg-slate-100 p-1 rounded-xl text-[11px]">
+                            <button id="vat-exclude-btn" onclick="setVatMode('exclude')" class="px-4 py-2 rounded-lg font-black transition-all bg-white shadow-sm text-blue-600">VAT 별도</button>
+                            <button id="vat-include-btn" onclick="setVatMode('include')" class="px-4 py-2 rounded-lg font-black transition-all text-slate-500">VAT 포함</button>
                         </div>
                     </div>
 
                     <div id="items-container" class="space-y-4"></div>
-                    <button onclick="addItem()" class="mt-8 w-full py-5 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 font-bold hover:bg-blue-50 transition-all flex justify-center items-center gap-2"><i data-lucide="plus"></i> 새로운 항목 추가</button>
+                    <button onclick="addItem()" class="mt-8 w-full py-5 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 font-bold hover:bg-blue-50 transition-all flex justify-center items-center gap-2 active:scale-95"><i data-lucide="plus"></i> 새로운 항목 추가</button>
                 </section>
 
-                <div class="bg-slate-900 rounded-[32px] p-10 text-white flex flex-col md:flex-row justify-between items-center gap-8 shadow-2xl relative">
+                <div class="bg-slate-900 rounded-[32px] p-10 text-white flex flex-col md:flex-row justify-between items-center gap-8 shadow-2xl relative overflow-hidden">
                     <div class="absolute top-0 right-0 w-64 h-64 bg-blue-500 blur-[120px] opacity-20 pointer-events-none"></div>
                     <div class="relative z-10">
                         <p class="text-xs font-black text-blue-400 uppercase mb-2">총 합계 금액</p>
                         <h2 class="text-5xl font-black tracking-tighter"><span id="grand-total">0</span><span class="text-2xl font-normal ml-2 opacity-50">KRW</span></h2>
                     </div>
                     <div class="relative z-10 flex gap-3 w-full md:w-auto">
-                        <button onclick="togglePreview('estimate')" class="flex-1 md:flex-none px-10 py-5 bg-blue-600 rounded-2xl font-black text-lg hover:bg-blue-500 transition-all active:scale-95">문서 미리보기</button>
+                        <button onclick="togglePreview('estimate')" class="flex-1 md:flex-none px-10 py-5 bg-blue-600 rounded-2xl font-black text-lg hover:bg-blue-500 transition-all shadow-xl active:scale-95">문서 미리보기</button>
                     </div>
                 </div>
             </div>
 
             <aside class="space-y-6">
                 <div class="bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm">
-                    <h3 class="font-black text-lg mb-6 flex items-center gap-2 text-slate-800 uppercase"><i data-lucide="history" class="text-blue-600"></i> 보관함</h3>
+                    <h3 class="font-black text-lg mb-6 flex items-center gap-2 text-slate-800 uppercase tracking-tight"><i data-lucide="history" class="text-blue-600"></i> 보관함</h3>
                     <div id="repo-container" class="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar"></div>
                 </div>
             </aside>
@@ -527,63 +530,63 @@
                 <button onclick="togglePreview('statement'); buildPreview()" class="px-6 py-2 rounded-xl text-xs font-black uppercase text-white hover:bg-white/10">명세서</button>
                 <button onclick="togglePreview('receipt'); buildPreview()" class="px-6 py-2 rounded-xl text-xs font-black uppercase text-white hover:bg-white/10">영수증</button>
             </div>
-            <button onclick="window.print()" class="px-10 py-3 bg-blue-600 text-white rounded-2xl font-black flex items-center gap-2 active:scale-95"><i data-lucide="printer"></i> 인쇄 / PDF 저장</button>
+            <button onclick="window.print()" class="px-10 py-3 bg-blue-600 text-white rounded-2xl font-black flex items-center gap-2 active:scale-95 shadow-xl shadow-blue-500/20"><i data-lucide="printer"></i> 인쇄 / PDF 저장</button>
         </div>
 
-        <div id="print-area" class="flex justify-center p-4">
+        <div id="print-area" class="flex justify-center p-4 md:p-10">
             <div class="bg-white shadow-2xl relative print-page-shadow" style="width: 210mm; min-height: auto; padding: 15mm 15mm;">
-                <!-- 1페이지 고정 헤더 -->
+                <!-- 1페이지용 헤더 영역 (페이지 초과 시 반복 안 함) -->
                 <div class="print-first-page-only">
-                    <h1 id="p-title" class="text-center font-black underline underline-offset-[12px] decoration-4 mb-8 tracking-[20px] text-5xl uppercase">견 적 서</h1>
-                    <div class="flex justify-between items-start mb-6">
+                    <h1 id="p-title" class="text-center font-black underline underline-offset-[12px] decoration-4 mb-10 tracking-[20px] text-5xl uppercase">견 적 서</h1>
+                    <div class="flex justify-between items-start mb-8">
                         <div class="w-[45%] pt-2">
                             <div class="text-3xl font-black border-b-[3px] border-black inline-block pb-1 pr-10 mb-4">
                                 <span id="p-client">귀하</span> <span class="text-xl font-normal ml-2">귀하</span>
                             </div>
                             <div id="p-date" class="text-lg font-bold text-slate-600">2023년 05월 01일</div>
-                            <p class="text-xs text-slate-500 mt-4">아래와 같이 견적/명세합니다.</p>
+                            <p class="text-xs text-slate-500 mt-4 font-medium leading-relaxed">아래와 같이 견적/명세합니다.</p>
                         </div>
                         <div class="w-[400px]">
                             <table class="w-full border-collapse border-[1.5px] border-black text-[12px] table-fixed">
                                 <tbody>
-                                    <tr><td class="border border-black bg-slate-50 font-black text-center w-20 py-2">사업자번호</td><td colSpan="3" class="border border-black text-center font-black text-[12px] tracking-widest">322-15-02616</td></tr>
+                                    <tr><td class="border border-black bg-slate-50 font-black text-center w-20 py-2">사업자번호</td><td colSpan="3" class="border border-black text-center font-black tracking-widest">322-15-02616</td></tr>
                                     <tr>
                                         <td class="border border-black bg-slate-50 font-black text-center py-2">상 호</td>
-                                        <td class="border border-black text-center font-bold px-1 break-keep leading-tight">메이스튜디오</td>
+                                        <td class="border border-black text-center font-bold px-1 break-keep leading-tight text-[11px]">메이스튜디오</td>
                                         <td class="border border-black bg-slate-50 font-black text-center w-14">성 명</td>
-                                        <td class="border border-black text-center relative py-2">
+                                        <td class="border border-black text-center relative py-2 overflow-visible">
                                             <span class="font-bold mr-8">정윤희</span> <span class="relative z-10 text-[10px] pl-1">(인)</span>
-                                            <img src="stamp.png" alt="도장" class="absolute top-1/2 right-1 -translate-y-1/2 w-10 h-10 object-contain pointer-events-none z-20 rotate-12 opacity-90">
+                                            <img src="stamp.png" alt="도장" class="absolute top-1/2 right-1 -translate-y-1/2 w-10 h-10 object-contain pointer-events-none z-20 rotate-12 opacity-90" onerror="this.style.display='none'">
                                         </td>
                                     </tr>
-                                    <tr><td class="border border-black bg-slate-50 font-black text-center py-2">주 소</td><td colSpan="3" class="border border-black text-left px-3 text-[11px] py-1 leading-tight break-keep">창원시 성산구 중앙대로 33 대흥인터빌 519호</td></tr>
-                                    <tr><td class="border border-black bg-slate-50 font-black text-center py-2">연락처</td><td class="border border-black text-center font-bold">010-3560-5859</td><td class="border border-black bg-slate-50 font-black text-center">이메일</td><td class="border border-black text-center text-[10px] px-1 leading-tight break-all">contact<br>@maystudio.kr</td></tr>
+                                    <tr><td class="border border-black bg-slate-50 font-black text-center py-2">주 소</td><td colSpan="3" class="border border-black text-left px-3 text-[10px] py-1.5 leading-tight break-keep">창원시 성산구 중앙대로 33 대흥인터빌 519호</td></tr>
+                                    <tr><td class="border border-black bg-slate-50 font-black text-center py-2">연락처</td><td class="border border-black text-center font-bold">010-3560-5859</td><td class="border border-black bg-slate-50 font-black text-center">이메일</td><td class="border border-black text-center text-[10px] px-1 leading-tight break-all font-medium">contact<br>@maystudio.kr</td></tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
 
-                <!-- 테이블 시작 -->
+                <!-- 테이블 본문 -->
                 <table class="w-full border-collapse border-[1.5px] border-black text-[12px] mb-4">
                     <thead><tr class="bg-slate-100 h-10"><th class="border border-black w-12 font-black text-center">번호</th><th class="border border-black font-black text-center">품목 및 과업내용</th><th class="border border-black w-16 font-black text-center">수량</th><th class="border border-black w-24 font-black text-center">단가(원)</th><th class="border border-black w-32 font-black text-center">금액(원)</th><th class="border border-black w-16 font-black text-center text-[10px]">비고</th></tr></thead>
                     <tbody id="p-items-body"></tbody>
                     <tfoot>
-                        <tr class="h-10 bg-slate-50 text-[12px]"><td colSpan="4" class="border border-black text-right pr-8 font-bold text-slate-500">소계 (공급가액)</td><td id="p-subtotal" colSpan="2" class="border border-black text-right px-3 font-bold">0</td></tr>
-                        <tr class="h-10 bg-slate-50 text-[12px]"><td colSpan="4" class="border border-black text-right pr-8 font-bold text-slate-500">부가가치세 (10%)</td><td id="p-tax" colSpan="2" class="border border-black text-right px-3 font-bold">0</td></tr>
-                        <tr class="h-14 bg-slate-100 text-[12px]"><td colSpan="4" class="border border-black text-right pr-8 font-black text-xl uppercase">합계 금액 (VAT 포함)</td><td id="p-total" colSpan="2" class="border border-black text-right px-3 font-black text-2xl text-blue-700">0</td></tr>
+                        <tr class="h-10 bg-slate-50"><td colSpan="4" class="border border-black text-right pr-6 font-bold text-slate-600">소계 (공급가액)</td><td id="p-subtotal" colSpan="2" class="border border-black text-right px-3 font-bold">0</td></tr>
+                        <tr class="h-10 bg-slate-50"><td colSpan="4" class="border border-black text-right pr-6 font-bold text-slate-600">부가가치세 (10%)</td><td id="p-tax" colSpan="2" class="border border-black text-right px-3 font-bold">0</td></tr>
+                        <tr class="h-14 bg-slate-100"><td colSpan="4" class="border border-black text-right pr-6 font-black text-xl uppercase tracking-tighter">합계 금액 (VAT 포함)</td><td id="p-total" colSpan="2" class="border border-black text-right px-3 font-black text-2xl text-blue-700">0</td></tr>
                     </tfoot>
                 </table>
 
-                <!-- 하단 정보 섹션 -->
+                <!-- 하단 정보 섹션 (잘림 방지) -->
                 <div class="print-footer-container">
-                    <div class="p-5 border-2 border-slate-900 rounded-3xl font-black bg-slate-50 flex items-center justify-between mb-6">
+                    <div class="p-4 border-2 border-slate-900 rounded-3xl font-black bg-slate-50 flex items-center justify-between mb-6">
                         <div class="flex items-center gap-4"><span class="bg-slate-900 text-white px-3 py-1 rounded-lg text-xs uppercase tracking-tight">입금 계좌 정보</span><span class="text-lg">농협 302-1456-7890-11 (예금주: 정윤희)</span></div>
                     </div>
                     <div class="grid grid-cols-[1.5fr_0.5fr] gap-10">
-                        <div class="space-y-4">
+                        <div class="space-y-3">
                             <h5 class="text-[11px] font-black text-slate-400 uppercase tracking-widest">참고 및 유의사항</h5>
-                            <ul class="text-[10px] text-slate-500 space-y-1 list-disc pl-5 font-medium leading-relaxed">
+                            <ul class="text-[10px] text-slate-600 space-y-1.5 list-disc pl-5 font-medium leading-relaxed">
                                 <li>본 문서는 발행일로부터 30일간 유효합니다.</li>
                                 <li class="whitespace-nowrap">작업 범위가 협의 내용보다 확장될 경우 추가 견적이 발생할 수 있습니다.</li>
                                 <li>최종 결과물의 저작권은 잔금 지급이 완료된 시점에 클라이언트에게 귀속됩니다.</li>
