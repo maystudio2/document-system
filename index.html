@@ -301,7 +301,8 @@
                 `;
             });
 
-            for(let i = filteredItems.length; i < 12; i++) {
+            // 페이지 조절을 위해 기본 빈 줄 개수를 10개로 조정
+            for(let i = filteredItems.length; i < 10; i++) {
                 tbody.innerHTML += `<tr class="h-[45px] text-[12px]"><td class="border border-black text-center text-slate-200">${i+1}</td><td class="border border-black"></td><td class="border border-black"></td><td class="border border-black"></td><td class="border border-black"></td><td class="border border-black"></td></tr>`;
             }
 
@@ -367,11 +368,32 @@
 
     <style>
         @media print {
-            body * { visibility: hidden; background: white !important; -webkit-print-color-adjust: exact !important; }
+            body { background: white !important; -webkit-print-color-adjust: exact !important; }
+            body * { visibility: hidden; }
             #print-area, #print-area * { visibility: visible; }
-            #print-area { position: absolute; left: 0; top: 0; padding: 0; margin: 0; width: 100%; }
-            .print-page-shadow { box-shadow: none !important; border: 1.5px solid black !important; }
+            #print-area { 
+                position: absolute; 
+                left: 0; 
+                top: 0; 
+                width: 210mm; 
+                margin: 0; 
+                padding: 0; 
+                background: white !important;
+            }
+            .print-page-shadow { 
+                box-shadow: none !important; 
+                border: none !important; 
+                width: 100% !important; 
+                min-height: auto !important; 
+                padding: 10mm 15mm !important; 
+                margin: 0 !important;
+            }
             @page { size: A4; margin: 0; }
+            
+            /* 푸터와 계좌 정보가 페이지 경계에서 잘리지 않도록 설정 */
+            .print-footer-container {
+                page-break-inside: avoid;
+            }
         }
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
@@ -544,9 +566,11 @@
         </div>
 
         <div id="print-area" class="flex justify-center p-8 md:p-12">
-            <div class="bg-white shadow-2xl relative" style="width: 210mm; min-height: 297mm; padding: 20mm 15mm;">
+            <div class="bg-white shadow-2xl relative print-page-shadow" style="width: 210mm; min-height: auto; padding: 20mm 15mm;">
+                <!-- 제목 섹션 -->
                 <h1 id="p-title" class="text-center font-black underline underline-offset-[12px] decoration-4 mb-16 tracking-[20px] text-5xl uppercase">견 적 서</h1>
 
+                <!-- 고객 및 사업자 정보 섹션 -->
                 <div class="flex justify-between items-start mb-12">
                     <div class="w-[48%] pt-2">
                         <div class="text-3xl font-black border-b-[3px] border-black inline-block pb-1 pr-10 mb-4">
@@ -590,6 +614,7 @@
                     </div>
                 </div>
 
+                <!-- 메인 품목 테이블 -->
                 <table class="w-full border-collapse border-[1.5px] border-black text-[12px] mb-10">
                     <thead><tr class="bg-slate-100"><th class="border border-black py-3 w-12 font-black text-center">번호</th><th class="border border-black font-black text-center">품목 및 과업내용</th><th class="border border-black w-16 font-black text-center">수량</th><th class="border border-black w-28 font-black text-center">단가(원)</th><th class="border border-black w-36 font-black text-center">금액(원)</th><th class="border border-black w-20 font-black text-center">비고</th></tr></thead>
                     <tbody id="p-items-body"></tbody>
@@ -609,19 +634,22 @@
                     </tfoot>
                 </table>
 
-                <div class="mt-10">
-                    <div class="p-6 border-2 border-slate-900 rounded-3xl font-black bg-slate-50 flex items-center justify-between gap-6 mb-8">
-                        <div class="flex items-center gap-4"><span class="bg-slate-900 text-white px-3 py-1 rounded-lg text-xs uppercase tracking-tight">입금 계좌 정보</span><span class="text-lg">농협 302-1456-7890-11 (예금주: 정윤희)</span></div>
-                    </div>
-                    <div class="grid grid-cols-[1.5fr_0.5fr] gap-10">
-                        <div class="space-y-4">
-                            <h5 class="text-[11px] font-black text-slate-400 uppercase tracking-widest">참고 및 유의사항</h5>
-                            <ul class="text-[10px] text-slate-500 space-y-1.5 list-disc pl-5 font-medium leading-relaxed">
-                                <li>본 문서는 발행일로부터 30일간 유효합니다.</li>
-                                <li class="whitespace-nowrap">작업 범위가 협의 내용보다 확장될 경우 추가 견적이 발생할 수 있습니다.</li>
-                                <li>최종 결과물의 저작권은 잔금 지급이 완료된 시점에 클라이언트에게 귀속됩니다.</li>
-                                <li>시안 확정 및 작업 착수 후에는 단순 변심으로 인한 환불이 불가합니다.</li>
-                            </ul>
+                <!-- 하단 정보 섹션 (페이지 분할 시 잘림 방지 처리) -->
+                <div class="print-footer-container">
+                    <div class="mt-10">
+                        <div class="p-6 border-2 border-slate-900 rounded-3xl font-black bg-slate-50 flex items-center justify-between gap-6 mb-8">
+                            <div class="flex items-center gap-4"><span class="bg-slate-900 text-white px-3 py-1 rounded-lg text-xs uppercase tracking-tight">입금 계좌 정보</span><span class="text-lg">농협 302-1456-7890-11 (예금주: 정윤희)</span></div>
+                        </div>
+                        <div class="grid grid-cols-[1.5fr_0.5fr] gap-10">
+                            <div class="space-y-4">
+                                <h5 class="text-[11px] font-black text-slate-400 uppercase tracking-widest">참고 및 유의사항</h5>
+                                <ul class="text-[10px] text-slate-500 space-y-1.5 list-disc pl-5 font-medium leading-relaxed">
+                                    <li>본 문서는 발행일로부터 30일간 유효합니다.</li>
+                                    <li class="whitespace-nowrap">작업 범위가 협의 내용보다 확장될 경우 추가 견적이 발생할 수 있습니다.</li>
+                                    <li>최종 결과물의 저작권은 잔금 지급이 완료된 시점에 클라이언트에게 귀속됩니다.</li>
+                                    <li>시안 확정 및 작업 착수 후에는 단순 변심으로 인한 환불이 불가합니다.</li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </div>
