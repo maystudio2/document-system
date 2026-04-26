@@ -93,19 +93,12 @@
                 <section class="bg-white p-8 rounded-[32px] border shadow-sm">
                     <div class="mb-8 p-6 bg-slate-50 rounded-2xl flex flex-col md:flex-row md:items-center gap-6">
                         <div class="flex-1">
-                            <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-widest">Document Type & Title</label>
-                            <div class="flex gap-3 items-center">
-                                <select id="doc-type" onchange="updateLivePreviewTitle()" class="bg-white border rounded-xl px-3 py-2 font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="견적서">견적서</option>
-                                    <option value="명세서">명세서</option>
-                                    <option value="영수증">영수증</option>
-                                </select>
-                                <input id="doc-title" type="text" oninput="updateLivePreviewTitle()" placeholder="과업명을 입력하세요 (예: 브랜드 디자인)" class="flex-1 bg-transparent border-b-2 font-bold text-lg outline-none focus:border-blue-600 py-1 transition-all">
-                            </div>
+                            <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-widest">Project Title</label>
+                            <input id="doc-title" type="text" oninput="updateLivePreviewTitle()" placeholder="과업명을 입력하세요 (예: 브랜드 디자인 프로젝트)" class="w-full bg-transparent border-b-2 font-bold text-lg outline-none focus:border-blue-600 py-1 transition-all">
                         </div>
                         <div class="text-right">
                             <p class="text-[10px] font-black text-slate-400 mb-1">FILENAME PREVIEW</p>
-                            <p id="live-title-preview" class="text-xs font-bold text-blue-700 italic opacity-60">[메이스튜디오]YYMMDD_업체명_구분</p>
+                            <p id="live-title-preview" class="text-xs font-bold text-blue-700 italic opacity-60">[메이스튜디오]YYMMDD_업체명_견적서</p>
                         </div>
                     </div>
 
@@ -116,7 +109,7 @@
                         </div>
                         <div>
                             <label class="text-[10px] font-black text-slate-400 mb-2 block">INVOICE DATE</label>
-                            <input id="invoice-date" type="date" class="w-full p-4 bg-slate-50 border rounded-2xl font-medium outline-none focus:ring-2 focus:ring-blue-500">
+                            <input id="invoice-date" type="date" onchange="updateLivePreviewTitle()" class="w-full p-4 bg-slate-50 border rounded-2xl font-medium outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                     </div>
 
@@ -163,12 +156,18 @@
     <!-- Preview Modal -->
     <div id="preview-modal" style="display:none;" class="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[550] overflow-y-auto">
         <div class="sticky-nav sticky top-0 z-[600] w-full bg-slate-900/80 px-8 py-4 flex justify-between items-center border-b border-white/5">
-            <button onclick="togglePreview()" class="p-3 bg-white/10 text-white rounded-2xl hover:bg-white/20 transition-all"><i data-lucide="x"></i></button>
-            <div class="flex gap-3">
-                <button onclick="window.print()" class="px-10 py-3 bg-blue-600 text-white rounded-2xl font-black flex items-center gap-2 active:scale-95 shadow-xl hover:bg-blue-500 transition-all">
-                    <i data-lucide="printer"></i> 인쇄 / PDF 저장
-                </button>
+            <div class="flex items-center gap-4">
+                <button onclick="togglePreview()" class="p-3 bg-white/10 text-white rounded-2xl hover:bg-white/20 transition-all"><i data-lucide="x"></i></button>
+                <!-- 문서 구분 선택을 미리보기 상단으로 이동 -->
+                <div class="flex bg-white/10 p-1 rounded-xl">
+                    <button onclick="changeDocType('견적서')" class="type-btn px-4 py-2 rounded-lg text-xs font-black transition-all text-white hover:bg-white/10" data-type="견적서">견적서</button>
+                    <button onclick="changeDocType('명세서')" class="type-btn px-4 py-2 rounded-lg text-xs font-black transition-all text-white hover:bg-white/10" data-type="명세서">명세서</button>
+                    <button onclick="changeDocType('영수증')" class="type-btn px-4 py-2 rounded-lg text-xs font-black transition-all text-white hover:bg-white/10" data-type="영수증">영수증</button>
+                </div>
             </div>
+            <button onclick="printInvoice()" class="px-10 py-3 bg-blue-600 text-white rounded-2xl font-black flex items-center gap-2 active:scale-95 shadow-xl hover:bg-blue-500 transition-all">
+                <i data-lucide="printer"></i> 인쇄 / PDF 저장
+            </button>
         </div>
 
         <div id="print-area" class="flex justify-center p-8">
@@ -184,7 +183,7 @@
                                 <span class="text-xl font-normal opacity-70">귀하</span>
                             </div>
                             <div id="p-date" class="text-lg font-bold text-slate-600 mb-6">202X년 XX월 XX일</div>
-                            <p class="text-[12px] text-slate-500 font-medium">아래와 같이 견적 및 명세합니다.</p>
+                            <p id="p-intro-msg" class="text-[12px] text-slate-500 font-medium">아래와 같이 견적 및 명세합니다.</p>
                         </div>
                         
                         <!-- Vendor Info Table -->
@@ -197,7 +196,6 @@
                                         <td class="border border-black bg-slate-50 font-black text-center w-14">성 명</td>
                                         <td class="border border-black text-center relative py-2 overflow-visible">
                                             <span class="font-bold mr-6">정윤희</span><span class="text-[10px]">(인)</span>
-                                            <!-- stamp.png 이미지 적용 -->
                                             <img src="stamp.png" alt="도장" class="absolute top-1/2 right-1 -translate-y-1/2 w-10 h-10 object-contain pointer-events-none z-20 rotate-12 opacity-95" onerror="this.style.display='none'">
                                         </td>
                                     </tr>
@@ -206,7 +204,6 @@
                                         <td class="border border-black bg-slate-50 font-black text-center py-2">연락처</td>
                                         <td class="border border-black text-center font-bold py-2 text-[11px]">010-3560-5859</td>
                                         <td class="border border-black bg-slate-50 font-black text-center">이메일</td>
-                                        <!-- 이메일 @에서 줄바꿈 적용 -->
                                         <td class="border border-black text-center text-[10px] py-1 font-medium leading-tight">contact<br>@maystudio.kr</td>
                                     </tr>
                                 </tbody>
@@ -246,7 +243,6 @@
 
                 <!-- Footer Section -->
                 <div class="mt-auto">
-                    <!-- Project Management 문구 제거 및 계좌 정보 중앙 정렬형태로 수정 -->
                     <div class="p-4 border-y border-slate-200 flex items-center justify-center mb-8 opacity-80 text-center">
                         <div class="flex items-center gap-4">
                             <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-r pr-4 border-slate-200">Payment Info</span>
@@ -295,6 +291,7 @@
         let items = [{ id: Date.now(), name: '', qty: '', price: '' }];
         let vatMode = 'exclude'; 
         let savedDocs = [];
+        let currentDocType = '견적서'; // 기본 구분값
 
         const showNotify = (msg, type = 'success') => {
             const n = document.getElementById('notification');
@@ -425,12 +422,27 @@
 
         window.updateLivePreviewTitle = () => {
             const client = document.getElementById('client-name').value || '업체명';
-            const type = document.getElementById('doc-type').value;
             const rawDate = document.getElementById('invoice-date').value || new Date().toISOString().split('T')[0];
             const dateStr = rawDate.replace(/-/g, '').slice(2);
-            document.getElementById('live-title-preview').textContent = `[메이스튜디오]${dateStr}_${client}_${type}`;
-            document.getElementById('p-client').textContent = client;
-            document.getElementById('p-doc-type').textContent = type.split('').join(' '); 
+            // 파일명 미리보기 업데이트
+            document.getElementById('live-title-preview').textContent = `[메이스튜디오]${dateStr}_${client}_${currentDocType}`;
+            if(document.getElementById('p-client')) document.getElementById('p-client').textContent = client;
+        };
+
+        window.changeDocType = (type) => {
+            currentDocType = type;
+            // 모달 내 버튼 상태 업데이트
+            document.querySelectorAll('.type-btn').forEach(btn => {
+                if(btn.dataset.type === type) {
+                    btn.className = 'type-btn px-4 py-2 rounded-lg text-xs font-black transition-all bg-white text-blue-600 shadow-sm';
+                } else {
+                    btn.className = 'type-btn px-4 py-2 rounded-lg text-xs font-black transition-all text-white hover:bg-white/10';
+                }
+            });
+            // 미리보기 제목 및 문구 업데이트
+            document.getElementById('p-doc-type').textContent = type.split('').join(' ');
+            document.getElementById('p-intro-msg').textContent = type === '영수증' ? '아래와 같이 정히 영수합니다.' : '아래와 같이 견적 및 명세합니다.';
+            updateLivePreviewTitle();
         };
 
         window.handleSave = async () => {
@@ -442,7 +454,7 @@
             const docData = {
                 clientName,
                 docTitle: document.getElementById('doc-title').value,
-                docType: document.getElementById('doc-type').value,
+                docType: currentDocType,
                 fullTitle: document.getElementById('live-title-preview').textContent,
                 invoiceDate: document.getElementById('invoice-date').value,
                 items,
@@ -465,11 +477,11 @@
         };
 
         window.handleDelete = async (e, docId) => {
-            e.stopPropagation(); // 카드 클릭(불러오기) 방지
+            e.stopPropagation();
             if (!currentUser) return;
             try {
                 await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'invoices', docId));
-                if (currentDocId === docId) createNewDoc(); // 현재 편집 중인 문서면 초기화
+                if (currentDocId === docId) createNewDoc();
                 showNotify("문서가 보관함에서 삭제되었습니다.");
             } catch (e) {
                 showNotify("삭제 중 오류 발생", "error");
@@ -479,11 +491,11 @@
         window.createNewDoc = () => {
             currentDocId = null;
             document.getElementById('doc-title').value = '';
-            document.getElementById('doc-type').value = '견적서';
             document.getElementById('client-name').value = '';
             document.getElementById('invoice-date').value = new Date().toISOString().split('T')[0];
             items = [{ id: Date.now(), name: '', qty: '', price: '' }];
             vatMode = 'exclude';
+            currentDocType = '견적서';
             setVatMode('exclude');
             renderItems();
             updateLivePreviewTitle();
@@ -494,7 +506,10 @@
             const m = document.getElementById('preview-modal');
             const isOpening = m.style.display === 'none';
             m.style.display = isOpening ? 'block' : 'none';
-            if(isOpening) buildPreview();
+            if(isOpening) {
+                buildPreview();
+                changeDocType(currentDocType); // 현재 타입 상태 반영
+            }
         };
 
         window.buildPreview = () => {
@@ -545,6 +560,21 @@
             calculateTotal();
         };
 
+        // PDF 저장을 위한 파일명 동적 제어 함수
+        window.printInvoice = () => {
+            const originalTitle = document.title;
+            const fileName = document.getElementById('live-title-preview').textContent;
+            
+            // 브라우저 인쇄 창이 뜰 때 document.title이 파일명이 됨
+            document.title = fileName;
+            window.print();
+            
+            // 인쇄 창이 닫힌 후 원래 타이틀로 복구
+            setTimeout(() => {
+                document.title = originalTitle;
+            }, 500);
+        };
+
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
@@ -581,7 +611,7 @@
             currentDocId = id;
             document.getElementById('client-name').value = d.clientName;
             document.getElementById('doc-title').value = d.docTitle || '';
-            document.getElementById('doc-type').value = d.docType || '견적서';
+            currentDocType = d.docType || '견적서';
             document.getElementById('invoice-date').value = d.invoiceDate;
             items = [...d.items];
             vatMode = d.vatMode || 'exclude';
