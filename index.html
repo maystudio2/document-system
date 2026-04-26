@@ -22,7 +22,6 @@
                 background: white !important;
                 -webkit-print-color-adjust: exact !important;
             }
-            /* 인쇄 시 미리보기 영역만 표시 */
             body > *:not(#preview-modal) { display: none !important; }
             #preview-modal { 
                 position: absolute !important;
@@ -46,7 +45,7 @@
                 box-shadow: none !important; 
                 border: none !important; 
                 width: 210mm !important; 
-                height: 296mm !important; /* 2페이지 밀림 방지 */
+                height: 296mm !important; 
                 padding: 15mm !important; 
                 margin: 0 !important;
                 box-sizing: border-box;
@@ -94,12 +93,19 @@
                 <section class="bg-white p-8 rounded-[32px] border shadow-sm">
                     <div class="mb-8 p-6 bg-slate-50 rounded-2xl flex flex-col md:flex-row md:items-center gap-6">
                         <div class="flex-1">
-                            <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-widest">Project Title (Internal)</label>
-                            <input id="doc-title" type="text" oninput="updateLivePreviewTitle()" placeholder="과업명을 입력하세요" class="w-full bg-transparent border-b-2 font-bold text-lg outline-none focus:border-blue-600 py-1 transition-all">
+                            <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-widest">Document Type & Title</label>
+                            <div class="flex gap-3 items-center">
+                                <select id="doc-type" onchange="updateLivePreviewTitle()" class="bg-white border rounded-xl px-3 py-2 font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="견적서">견적서</option>
+                                    <option value="명세서">명세서</option>
+                                    <option value="영수증">영수증</option>
+                                </select>
+                                <input id="doc-title" type="text" oninput="updateLivePreviewTitle()" placeholder="과업명을 입력하세요 (예: 브랜드 디자인)" class="flex-1 bg-transparent border-b-2 font-bold text-lg outline-none focus:border-blue-600 py-1 transition-all">
+                            </div>
                         </div>
                         <div class="text-right">
                             <p class="text-[10px] font-black text-slate-400 mb-1">FILENAME PREVIEW</p>
-                            <p id="live-title-preview" class="text-xs font-bold text-blue-700 italic opacity-60">YYMMDD_업체명_과업명</p>
+                            <p id="live-title-preview" class="text-xs font-bold text-blue-700 italic opacity-60">[메이스튜디오]YYMMDD_업체명_구분</p>
                         </div>
                     </div>
 
@@ -169,7 +175,7 @@
             <div class="bg-white relative print-page shadow-2xl" style="width: 210mm; min-height: 297mm; padding: 15mm;">
                 <!-- Invoice Header -->
                 <div class="print-header">
-                    <h1 class="text-center font-black underline underline-offset-[16px] decoration-[3px] mb-12 tracking-[24px] text-5xl uppercase text-slate-900">견 적 서</h1>
+                    <h1 id="p-doc-type" class="text-center font-black underline underline-offset-[16px] decoration-[3px] mb-12 tracking-[24px] text-5xl uppercase text-slate-900">견 적 서</h1>
                     
                     <div class="flex justify-between items-start mb-10">
                         <div class="w-[50%] pt-2">
@@ -191,7 +197,6 @@
                                         <td class="border border-black bg-slate-50 font-black text-center w-14">성 명</td>
                                         <td class="border border-black text-center relative py-2 overflow-visible">
                                             <span class="font-bold mr-6">정윤희</span><span class="text-[10px]">(인)</span>
-                                            <!-- 도장 이미지 (실제 파일 경로 확인 필요) -->
                                             <div class="absolute top-1/2 right-1 -translate-y-1/2 w-10 h-10 border-2 border-red-500/30 rounded-full flex items-center justify-center text-[8px] text-red-500 font-bold rotate-12 pointer-events-none">메이스튜디오</div>
                                         </td>
                                     </tr>
@@ -215,9 +220,7 @@
                             <th class="border border-black w-16 font-black text-center">비고</th>
                         </tr>
                     </thead>
-                    <tbody id="p-items-body">
-                        <!-- JS로 채워짐 -->
-                    </tbody>
+                    <tbody id="p-items-body"></tbody>
                     <tfoot>
                         <tr class="h-10 bg-slate-50">
                             <td colSpan="4" class="border border-black text-right pr-6 font-bold text-slate-500 uppercase tracking-tighter">Subtotal (공급가액)</td>
@@ -236,18 +239,20 @@
 
                 <!-- Footer Section -->
                 <div class="mt-auto">
-                    <div class="p-5 border-2 border-slate-900 rounded-3xl font-black bg-slate-50 flex items-center justify-between mb-8 shadow-sm">
-                        <div class="flex items-center gap-5">
-                            <span class="bg-slate-900 text-white px-4 py-1.5 rounded-xl text-xs uppercase tracking-widest">Bank Info</span>
-                            <span class="text-xl">농협 302-1456-7890-11 (예금주: 정윤희)</span>
+                    <!-- Updated Bank Info Section: Less aggressive, more balanced -->
+                    <div class="p-4 border-y border-slate-200 flex items-center justify-between mb-8 opacity-80">
+                        <div class="flex items-center gap-4">
+                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-r pr-4 border-slate-200">Payment Info</span>
+                            <span class="text-sm font-bold text-slate-700">농협 302-1456-7890-11 (예금주: 정윤희)</span>
                         </div>
+                        <div class="text-[9px] text-slate-400 italic">MAY STUDIO Project Management</div>
                     </div>
                     
                     <div class="grid grid-cols-1 gap-6">
                         <div class="space-y-3">
                             <h5 class="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Notice & Conditions</h5>
                             <ul class="text-[10px] text-slate-500 space-y-1.5 list-disc pl-5 font-medium leading-relaxed">
-                                <li>본 견적서는 발행일로부터 30일간 유효합니다.</li>
+                                <li>본 문서는 발행일로부터 30일간 유효합니다.</li>
                                 <li>작업 범위가 사전 협의된 범위를 초과할 경우 추가 비용이 발생할 수 있습니다.</li>
                                 <li>모든 저작권은 잔금이 완납된 시점에 클라이언트에게 최종 귀속됩니다.</li>
                                 <li>제작 진행 중 단순 변심으로 인한 취소 시 작업 진행률에 따라 위약금이 발생할 수 있습니다.</li>
@@ -265,7 +270,6 @@
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase Config (Keep your original config)
         const firebaseConfig = {
             apiKey: "AIzaSyBY-6GCqHa3H4xifEc6Pi4Uulp6V5z9Yv0",
             authDomain: "document-system-8c160.firebaseapp.com",
@@ -286,7 +290,6 @@
         let vatMode = 'exclude'; 
         let savedDocs = [];
 
-        // --- Notification Logic ---
         const showNotify = (msg, type = 'success') => {
             const n = document.getElementById('notification');
             n.textContent = msg;
@@ -295,7 +298,6 @@
             setTimeout(() => { n.style.display = 'none'; }, 3000);
         };
 
-        // --- Auth Functions ---
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('login-email').value;
@@ -318,7 +320,6 @@
 
         window.handleLogout = () => signOut(auth).then(() => location.reload());
 
-        // --- Core Logic ---
         window.renderItems = () => {
             const container = document.getElementById('items-container');
             container.innerHTML = '';
@@ -349,7 +350,7 @@
             const item = items.find(i => i.id === id);
             if (item) {
                 item[field] = value;
-                calculateTotal(); // 실시간 계산 및 UI 업데이트
+                calculateTotal();
             }
         };
 
@@ -379,7 +380,6 @@
                 if (vatMode === 'exclude') {
                     subtotal += rowTotal;
                 } else {
-                    // 포함일 때: rowTotal 자체가 총액임
                     grandTotal += rowTotal;
                 }
             });
@@ -391,27 +391,21 @@
             }
 
             const tax = grandTotal - subtotal;
-
-            // 메인 UI 업데이트
             document.getElementById('grand-total').textContent = grandTotal.toLocaleString();
-            
-            // 미리보기 모달 데이터 업데이트 (열려있든 닫혀있든 최신화)
             updatePreviewValues(subtotal, tax, grandTotal);
-            
             return { subtotal, tax, grandTotal };
         };
 
         const updatePreviewValues = (sub, tx, total) => {
-            document.getElementById('p-subtotal').textContent = sub.toLocaleString();
-            document.getElementById('p-tax').textContent = tx.toLocaleString();
-            document.getElementById('p-total').textContent = total.toLocaleString();
+            if(document.getElementById('p-subtotal')) document.getElementById('p-subtotal').textContent = sub.toLocaleString();
+            if(document.getElementById('p-tax')) document.getElementById('p-tax').textContent = tx.toLocaleString();
+            if(document.getElementById('p-total')) document.getElementById('p-total').textContent = total.toLocaleString();
         };
 
         window.setVatMode = (mode) => {
             vatMode = mode;
             const exBtn = document.getElementById('vat-exclude-btn');
             const inBtn = document.getElementById('vat-include-btn');
-            
             if(mode === 'exclude') {
                 exBtn.className = 'px-4 py-2 rounded-lg text-xs font-black bg-white shadow-sm text-blue-600';
                 inBtn.className = 'px-4 py-2 rounded-lg text-xs font-black text-slate-500 hover:text-slate-700';
@@ -425,11 +419,13 @@
 
         window.updateLivePreviewTitle = () => {
             const client = document.getElementById('client-name').value || '업체명';
-            const task = document.getElementById('doc-title').value || '과업명';
+            const type = document.getElementById('doc-type').value;
             const rawDate = document.getElementById('invoice-date').value || new Date().toISOString().split('T')[0];
             const dateStr = rawDate.replace(/-/g, '').slice(2);
-            document.getElementById('live-title-preview').textContent = `${dateStr}_${client}_${task}`;
+            // Updated naming convention: [메이스튜디오]날짜_클라이언트_구분
+            document.getElementById('live-title-preview').textContent = `[메이스튜디오]${dateStr}_${client}_${type}`;
             document.getElementById('p-client').textContent = client;
+            document.getElementById('p-doc-type').textContent = type.split('').join(' '); // Add spacing for aesthetics
         };
 
         window.handleSave = async () => {
@@ -437,10 +433,11 @@
             const clientName = document.getElementById('client-name').value;
             if (!clientName) { showNotify("클라이언트명을 입력하세요.", "error"); return; }
             
-            const { subtotal, grandTotal } = calculateTotal();
+            const { grandTotal } = calculateTotal();
             const docData = {
                 clientName,
                 docTitle: document.getElementById('doc-title').value,
+                docType: document.getElementById('doc-type').value,
                 fullTitle: document.getElementById('live-title-preview').textContent,
                 invoiceDate: document.getElementById('invoice-date').value,
                 items,
@@ -465,6 +462,7 @@
         window.createNewDoc = () => {
             currentDocId = null;
             document.getElementById('doc-title').value = '';
+            document.getElementById('doc-type').value = '견적서';
             document.getElementById('client-name').value = '';
             document.getElementById('invoice-date').value = new Date().toISOString().split('T')[0];
             items = [{ id: Date.now(), name: '', qty: '', price: '' }];
@@ -490,13 +488,10 @@
             const tbody = document.getElementById('p-items-body');
             tbody.innerHTML = '';
             
-            // 필터링 및 렌더링
             const validItems = items.filter(i => i.name.trim() !== '');
-            
             validItems.forEach((it, idx) => {
                 const q = parseFloat(it.qty) || 0;
                 const p = parseFloat(it.price) || 0;
-                
                 let unitPrice, totalRow;
                 if(vatMode === 'exclude') {
                     unitPrice = p;
@@ -505,7 +500,6 @@
                     unitPrice = Math.round(p / 1.1);
                     totalRow = Math.round((p / 1.1) * q);
                 }
-
                 tbody.innerHTML += `
                     <tr class="h-10 text-[12px]">
                         <td class="border border-black text-center">${idx + 1}</td>
@@ -518,7 +512,6 @@
                 `;
             });
 
-            // 빈 행 채우기 (최소 8행 유지)
             const emptyRows = Math.max(0, 8 - validItems.length);
             for(let i = 0; i < emptyRows; i++) {
                 tbody.innerHTML += `
@@ -532,17 +525,14 @@
                     </tr>
                 `;
             }
-            calculateTotal(); // 최종 금액 다시 바인딩
+            calculateTotal();
         };
 
-        // --- Firebase Listeners ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
                 document.getElementById('login-overlay').classList.add('hidden');
                 document.getElementById('main-app').classList.remove('hidden');
-                
-                // 데이터 실시간 동기화
                 const q = collection(db, 'artifacts', appId, 'users', user.uid, 'invoices');
                 onSnapshot(q, (snapshot) => {
                     savedDocs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -555,7 +545,7 @@
                         <div onclick="loadDoc('${d.id}')" class="p-4 bg-white border border-slate-200 rounded-2xl cursor-pointer hover:border-blue-500 hover:shadow-md transition-all">
                             <h4 class="font-bold text-sm text-slate-800 truncate">${d.clientName}</h4>
                             <div class="flex justify-between items-center mt-2">
-                                <p class="text-[10px] font-bold text-blue-600">${d.invoiceDate}</p>
+                                <p class="text-[10px] font-bold text-blue-600">${d.docType || '견적서'}</p>
                                 <p class="text-[10px] font-black text-slate-400">₩${d.totalAmount?.toLocaleString()}</p>
                             </div>
                         </div>
@@ -570,6 +560,7 @@
             currentDocId = id;
             document.getElementById('client-name').value = d.clientName;
             document.getElementById('doc-title').value = d.docTitle || '';
+            document.getElementById('doc-type').value = d.docType || '견적서';
             document.getElementById('invoice-date').value = d.invoiceDate;
             items = [...d.items];
             vatMode = d.vatMode || 'exclude';
