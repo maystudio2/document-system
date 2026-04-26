@@ -6,12 +6,266 @@
     <title>MAY STUDIO | Document Management System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Firebase SDKs -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+        
+        :root { font-family: 'Noto Sans KR', sans-serif; }
+
+        @media print {
+            @page { 
+                size: A4; 
+                margin: 0; 
+            }
+            body { 
+                margin: 0 !important; 
+                padding: 0 !important; 
+                background: white !important;
+                -webkit-print-color-adjust: exact !important;
+            }
+            /* 인쇄 시 미리보기 영역만 표시 */
+            body > *:not(#preview-modal) { display: none !important; }
+            #preview-modal { 
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 210mm !important;
+                height: 297mm !important;
+                display: block !important;
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                overflow: hidden !important;
+            }
+            #preview-modal-overlay, .sticky-nav { display: none !important; }
+            #print-area { 
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 210mm !important;
+            }
+            .print-page { 
+                box-shadow: none !important; 
+                border: none !important; 
+                width: 210mm !important; 
+                height: 296mm !important; /* 2페이지 밀림 방지 */
+                padding: 15mm !important; 
+                margin: 0 !important;
+                box-sizing: border-box;
+            }
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    </style>
+</head>
+<body class="bg-[#F8FAFC] text-[#1E293B]">
+
+    <div id="notification" style="display: none;"></div>
+
+    <!-- Login Screen -->
+    <div id="login-overlay" class="fixed inset-0 z-[500] bg-slate-900 flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-md p-10 rounded-[40px] shadow-2xl text-center">
+            <h2 class="text-3xl font-black mb-10 tracking-tighter">MAY STUDIO</h2>
+            <form id="login-form" class="space-y-4">
+                <input id="login-email" type="email" placeholder="관리자 이메일" required class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500">
+                <input id="login-pw" type="password" placeholder="비밀번호" required class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500">
+                <button type="submit" class="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-lg active:scale-95 transition-all">로그인</button>
+            </form>
+            <button onclick="handleSignUp()" class="mt-8 text-blue-600 font-bold text-sm">신규 계정 생성</button>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="main-app" class="hidden">
+        <header class="max-w-6xl mx-auto p-6 flex justify-between items-center">
+            <h1 class="text-2xl font-black tracking-tight text-slate-900">MAY STUDIO</h1>
+            <div class="flex gap-2">
+                <button onclick="createNewDoc()" class="px-5 py-2.5 bg-white border rounded-xl text-sm font-bold hover:bg-slate-50 transition-all">새 문서</button>
+                <button onclick="handleSave()" class="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold shadow-xl hover:bg-slate-800 active:scale-95 transition-all">저장하기</button>
+                <button onclick="handleLogout()" class="px-3 py-2 text-slate-400 text-xs font-bold hover:text-red-500">로그아웃</button>
+            </div>
+        </header>
+
+        <main class="max-w-6xl mx-auto px-6 pb-20 grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div class="lg:col-span-3 space-y-6">
+                <!-- Document Header Section -->
+                <section class="bg-white p-8 rounded-[32px] border shadow-sm">
+                    <div class="mb-8 p-6 bg-slate-50 rounded-2xl flex flex-col md:flex-row md:items-center gap-6">
+                        <div class="flex-1">
+                            <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-widest">Project Title (Internal)</label>
+                            <input id="doc-title" type="text" oninput="updateLivePreviewTitle()" placeholder="과업명을 입력하세요" class="w-full bg-transparent border-b-2 font-bold text-lg outline-none focus:border-blue-600 py-1 transition-all">
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] font-black text-slate-400 mb-1">FILENAME PREVIEW</p>
+                            <p id="live-title-preview" class="text-xs font-bold text-blue-700 italic opacity-60">YYMMDD_업체명_과업명</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+                        <div>
+                            <label class="text-[10px] font-black text-slate-400 mb-2 block">CLIENT NAME</label>
+                            <input id="client-name" type="text" placeholder="클라이언트 명칭" oninput="updateLivePreviewTitle()" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-slate-400 mb-2 block">INVOICE DATE</label>
+                            <input id="invoice-date" type="date" class="w-full p-4 bg-slate-50 border rounded-2xl font-medium outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="font-black text-lg flex items-center gap-2"><i data-lucide="list-checks" class="w-5 h-5"></i> 상세 항목</h3>
+                        <div class="flex bg-slate-100 p-1 rounded-xl">
+                            <button id="vat-exclude-btn" onclick="setVatMode('exclude')" class="px-4 py-2 rounded-lg text-xs font-black transition-all">VAT 별도</button>
+                            <button id="vat-include-btn" onclick="setVatMode('include')" class="px-4 py-2 rounded-lg text-xs font-black transition-all">VAT 포함</button>
+                        </div>
+                    </div>
+
+                    <div id="items-container"></div>
+                    <button onclick="addItem()" class="mt-4 w-full py-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 font-bold hover:bg-blue-50 hover:border-blue-200 transition-all flex items-center justify-center gap-2">
+                        <i data-lucide="plus-circle" class="w-5 h-5"></i> 항목 추가
+                    </button>
+                </section>
+
+                <!-- Total Amount Card -->
+                <div class="bg-slate-900 rounded-[32px] p-10 text-white flex flex-col md:flex-row justify-between items-center shadow-2xl gap-6">
+                    <div>
+                        <p class="text-xs font-bold text-blue-400 mb-1 uppercase tracking-widest">Total Amount Due</p>
+                        <h2 class="text-5xl font-black tracking-tighter"><span id="grand-total">0</span> <span class="text-2xl font-normal text-slate-400 ml-2">KRW</span></h2>
+                    </div>
+                    <button onclick="togglePreview()" class="w-full md:w-auto px-12 py-5 bg-blue-600 rounded-2xl font-black text-xl active:scale-95 hover:bg-blue-500 transition-all shadow-lg shadow-blue-900/20 flex items-center justify-center gap-3">
+                        <i data-lucide="file-text"></i> 문서 미리보기
+                    </button>
+                </div>
+            </div>
+
+            <!-- Repository Sidebar -->
+            <aside>
+                <div class="bg-white p-6 border rounded-[32px] shadow-sm sticky top-6">
+                    <h3 class="font-black text-sm text-slate-400 uppercase mb-6 tracking-widest flex items-center gap-2">
+                        <i data-lucide="archive" class="w-4 h-4"></i> Repository
+                    </h3>
+                    <div id="repo-container" class="custom-scrollbar overflow-y-auto max-h-[calc(100vh-200px)] space-y-3">
+                        <p class="text-xs text-slate-400 text-center py-10">저장된 문서가 없습니다.</p>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- Preview Modal -->
+    <div id="preview-modal" style="display:none;" class="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[550] overflow-y-auto">
+        <div class="sticky-nav sticky top-0 z-[600] w-full bg-slate-900/80 px-8 py-4 flex justify-between items-center border-b border-white/5">
+            <button onclick="togglePreview()" class="p-3 bg-white/10 text-white rounded-2xl hover:bg-white/20 transition-all"><i data-lucide="x"></i></button>
+            <div class="flex gap-3">
+                <button onclick="window.print()" class="px-10 py-3 bg-blue-600 text-white rounded-2xl font-black flex items-center gap-2 active:scale-95 shadow-xl hover:bg-blue-500 transition-all">
+                    <i data-lucide="printer"></i> 인쇄 / PDF 저장
+                </button>
+            </div>
+        </div>
+
+        <div id="print-area" class="flex justify-center p-8">
+            <div class="bg-white relative print-page shadow-2xl" style="width: 210mm; min-height: 297mm; padding: 15mm;">
+                <!-- Invoice Header -->
+                <div class="print-header">
+                    <h1 class="text-center font-black underline underline-offset-[16px] decoration-[3px] mb-12 tracking-[24px] text-5xl uppercase text-slate-900">견 적 서</h1>
+                    
+                    <div class="flex justify-between items-start mb-10">
+                        <div class="w-[50%] pt-2">
+                            <div class="text-3xl font-black border-b-[3px] border-black inline-block pb-1 pr-12 mb-6">
+                                <span id="p-client" class="mr-2">귀하</span> 
+                                <span class="text-xl font-normal opacity-70">귀하</span>
+                            </div>
+                            <div id="p-date" class="text-lg font-bold text-slate-600 mb-6">202X년 XX월 XX일</div>
+                            <p class="text-[12px] text-slate-500 font-medium">아래와 같이 견적 및 명세합니다.</p>
+                        </div>
+                        
+                        <!-- Vendor Info Table -->
+                        <div class="w-[380px]">
+                            <table class="w-full border-collapse border-[1.5px] border-black text-[12px] table-fixed">
+                                <tbody>
+                                    <tr><td class="border border-black bg-slate-50 font-black text-center w-20 py-1.5">사업자번호</td><td colSpan="3" class="border border-black text-center font-black tracking-widest py-1.5">322-15-02616</td></tr>
+                                    <tr>
+                                        <td class="border border-black bg-slate-50 font-black text-center py-2">상 호</td><td class="border border-black text-center font-bold px-1 py-2">메이스튜디오</td>
+                                        <td class="border border-black bg-slate-50 font-black text-center w-14">성 명</td>
+                                        <td class="border border-black text-center relative py-2 overflow-visible">
+                                            <span class="font-bold mr-6">정윤희</span><span class="text-[10px]">(인)</span>
+                                            <!-- 도장 이미지 (실제 파일 경로 확인 필요) -->
+                                            <div class="absolute top-1/2 right-1 -translate-y-1/2 w-10 h-10 border-2 border-red-500/30 rounded-full flex items-center justify-center text-[8px] text-red-500 font-bold rotate-12 pointer-events-none">메이스튜디오</div>
+                                        </td>
+                                    </tr>
+                                    <tr><td class="border border-black bg-slate-50 font-black text-center py-2">주 소</td><td colSpan="3" class="border border-black text-left px-3 text-[10px] py-2 leading-tight">창원시 성산구 중앙대로 33 대흥인터빌 519호</td></tr>
+                                    <tr><td class="border border-black bg-slate-50 font-black text-center py-2">연락처</td><td class="border border-black text-center font-bold py-2 text-[11px]">010-3560-5859</td><td class="border border-black bg-slate-50 font-black text-center">이메일</td><td class="border border-black text-center text-[10px] py-1 font-medium">contact@maystudio.kr</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Items Table -->
+                <table class="w-full border-collapse border-[1.5px] border-black text-[12px] mb-8">
+                    <thead>
+                        <tr class="bg-slate-100 h-10">
+                            <th class="border border-black w-12 font-black text-center">NO</th>
+                            <th class="border border-black font-black text-center">품목 및 과업내용</th>
+                            <th class="border border-black w-14 font-black text-center">수량</th>
+                            <th class="border border-black w-28 font-black text-center">단가(원)</th>
+                            <th class="border border-black w-32 font-black text-center">금액(원)</th>
+                            <th class="border border-black w-16 font-black text-center">비고</th>
+                        </tr>
+                    </thead>
+                    <tbody id="p-items-body">
+                        <!-- JS로 채워짐 -->
+                    </tbody>
+                    <tfoot>
+                        <tr class="h-10 bg-slate-50">
+                            <td colSpan="4" class="border border-black text-right pr-6 font-bold text-slate-500 uppercase tracking-tighter">Subtotal (공급가액)</td>
+                            <td id="p-subtotal" colSpan="2" class="border border-black text-right px-4 font-bold text-slate-800">0</td>
+                        </tr>
+                        <tr class="h-10 bg-slate-50">
+                            <td colSpan="4" class="border border-black text-right pr-6 font-bold text-slate-500 uppercase tracking-tighter">VAT (부가가치세 10%)</td>
+                            <td id="p-tax" colSpan="2" class="border border-black text-right px-4 font-bold text-slate-800">0</td>
+                        </tr>
+                        <tr class="h-14 bg-slate-100">
+                            <td colSpan="4" class="border border-black text-right pr-6 font-black text-xl uppercase tracking-tighter">Total (합계 금액)</td>
+                            <td id="p-total" colSpan="2" class="border border-black text-right px-4 font-black text-2xl text-blue-700">0</td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <!-- Footer Section -->
+                <div class="mt-auto">
+                    <div class="p-5 border-2 border-slate-900 rounded-3xl font-black bg-slate-50 flex items-center justify-between mb-8 shadow-sm">
+                        <div class="flex items-center gap-5">
+                            <span class="bg-slate-900 text-white px-4 py-1.5 rounded-xl text-xs uppercase tracking-widest">Bank Info</span>
+                            <span class="text-xl">농협 302-1456-7890-11 (예금주: 정윤희)</span>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 gap-6">
+                        <div class="space-y-3">
+                            <h5 class="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Notice & Conditions</h5>
+                            <ul class="text-[10px] text-slate-500 space-y-1.5 list-disc pl-5 font-medium leading-relaxed">
+                                <li>본 견적서는 발행일로부터 30일간 유효합니다.</li>
+                                <li>작업 범위가 사전 협의된 범위를 초과할 경우 추가 비용이 발생할 수 있습니다.</li>
+                                <li>모든 저작권은 잔금이 완납된 시점에 클라이언트에게 최종 귀속됩니다.</li>
+                                <li>제작 진행 중 단순 변심으로 인한 취소 시 작업 진행률에 따라 위약금이 발생할 수 있습니다.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Scripts -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // Firebase Config (Keep your original config)
         const firebaseConfig = {
             apiKey: "AIzaSyBY-6GCqHa3H4xifEc6Pi4Uulp6V5z9Yv0",
             authDomain: "document-system-8c160.firebaseapp.com",
@@ -26,115 +280,164 @@
         const db = getFirestore(app);
         const appId = 'may-studio-v1';
 
-        const MAY_INFO = {
-            bizNo: "322-15-02616",
-            name: "메이스튜디오",
-            ceo: "정윤희",
-            address: "창원시 성산구 중앙대로 33 대흥인터빌 519호",
-            tel: "010-3560-5859",
-            email: "contact@maystudio.kr",
-            bank: "농협 302-1456-7890-11 (예금주: 정윤희)"
-        };
-
         let currentUser = null;
         let currentDocId = null;
         let items = [{ id: Date.now(), name: '', qty: '', price: '' }];
         let vatMode = 'exclude'; 
         let savedDocs = [];
-        let unsubscribeDocs = null;
 
+        // --- Notification Logic ---
         const showNotify = (msg, type = 'success') => {
             const n = document.getElementById('notification');
             n.textContent = msg;
-            n.className = `fixed top-6 left-1/2 -translate-x-1/2 z-[1000] flex items-center gap-2 px-6 py-3 rounded-2xl shadow-2xl transition-all duration-300 font-bold text-white ${type === 'error' ? 'bg-red-500' : 'bg-slate-800'}`;
+            n.className = `fixed top-6 left-1/2 -translate-x-1/2 z-[1000] flex items-center gap-2 px-8 py-4 rounded-2xl shadow-2xl transition-all duration-300 font-black text-white ${type === 'error' ? 'bg-red-500' : 'bg-slate-800'}`;
             n.style.display = 'flex';
-            setTimeout(() => n.style.display = 'none', 3000);
+            setTimeout(() => { n.style.display = 'none'; }, 3000);
         };
 
-        // --- Auth ---
-        window.handleLogin = async (e) => {
+        // --- Auth Functions ---
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('login-email').value;
             const pw = document.getElementById('login-pw').value;
-            try { await signInWithEmailAndPassword(auth, email, pw); showNotify("로그인 성공"); }
-            catch (err) { showNotify("로그인 실패", "error"); }
-        };
+            try { 
+                await signInWithEmailAndPassword(auth, email, pw); 
+                showNotify("반갑습니다, 관리자님."); 
+            } catch (err) { 
+                showNotify("이메일 또는 비밀번호가 틀렸습니다.", "error"); 
+            }
+        });
+
         window.handleSignUp = async () => {
             const email = document.getElementById('login-email').value;
             const pw = document.getElementById('login-pw').value;
+            if(!email || !pw) return showNotify("정보를 입력하세요.", "error");
             try { await createUserWithEmailAndPassword(auth, email, pw); showNotify("가입 성공"); }
-            catch (err) { showNotify("가입 실패", "error"); }
+            catch (err) { showNotify("가입 실패: " + err.message, "error"); }
         };
+
         window.handleLogout = () => signOut(auth).then(() => location.reload());
 
-        // --- Logic ---
+        // --- Core Logic ---
         window.renderItems = () => {
             const container = document.getElementById('items-container');
             container.innerHTML = '';
             items.forEach((item) => {
                 const div = document.createElement('div');
-                div.className = "flex flex-col md:flex-row gap-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl mb-3";
+                div.className = "flex flex-col md:flex-row gap-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl mb-3 group hover:border-blue-200 transition-all";
                 div.innerHTML = `
-                    <div class="flex-1"><input type="text" value="${item.name}" oninput="updateItem(${item.id}, 'name', this.value)" placeholder="과업 내용을 입력하세요" class="w-full p-2.5 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none"></div>
+                    <div class="flex-1">
+                        <input type="text" value="${item.name}" oninput="updateItem(${item.id}, 'name', this.value)" placeholder="과업 내용을 입력하세요" class="w-full p-2.5 bg-white rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                    </div>
                     <div class="flex gap-2">
-                        <input type="number" value="${item.qty}" oninput="updateItem(${item.id}, 'qty', this.value)" placeholder="수량" class="w-20 p-2.5 rounded-xl border text-center">
-                        <input type="number" value="${item.price}" oninput="updateItem(${item.id}, 'price', this.value)" placeholder="단가" class="w-32 p-2.5 rounded-xl border text-right font-bold">
-                        <button onclick="removeItem(${item.id})" class="text-slate-300 hover:text-red-500 p-2"><i data-lucide="trash-2"></i></button>
+                        <div class="relative w-20">
+                            <input type="number" value="${item.qty}" oninput="updateItem(${item.id}, 'qty', this.value)" placeholder="수량" class="w-full p-2.5 bg-white rounded-xl border border-slate-200 text-center font-bold focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div class="relative w-40">
+                            <input type="number" value="${item.price}" oninput="updateItem(${item.id}, 'price', this.value)" placeholder="단가" class="w-full p-2.5 bg-white rounded-xl border border-slate-200 text-right font-black focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <button onclick="removeItem(${item.id})" class="text-slate-300 hover:text-red-500 p-2 transition-colors"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
                     </div>
                 `;
                 container.appendChild(div);
             });
             lucide.createIcons();
             calculateTotal();
-            updateLivePreviewTitle();
         };
 
         window.updateItem = (id, field, value) => {
             const item = items.find(i => i.id === id);
             if (item) {
                 item[field] = value;
-                calculateTotal(); // 변경 즉시 계산
+                calculateTotal(); // 실시간 계산 및 UI 업데이트
             }
         };
 
-        window.removeItem = (id) => { if(items.length > 1) { items = items.filter(i => i.id !== id); renderItems(); } };
-        window.addItem = () => { items.push({ id: Date.now(), name: '', qty: '', price: '' }); renderItems(); };
+        window.removeItem = (id) => { 
+            if(items.length > 1) { 
+                items = items.filter(i => i.id !== id); 
+                renderItems(); 
+            } else {
+                showNotify("최소 한 개의 항목은 유지해야 합니다.", "error");
+            }
+        };
+
+        window.addItem = () => { 
+            items.push({ id: Date.now(), name: '', qty: '', price: '' }); 
+            renderItems(); 
+        };
 
         const calculateTotal = () => {
             let subtotal = 0;
+            let grandTotal = 0;
+
             items.forEach(item => {
                 const q = parseFloat(item.qty) || 0;
                 const p = parseFloat(item.price) || 0;
-                subtotal += (q * p);
+                const rowTotal = q * p;
+                
+                if (vatMode === 'exclude') {
+                    subtotal += rowTotal;
+                } else {
+                    // 포함일 때: rowTotal 자체가 총액임
+                    grandTotal += rowTotal;
+                }
             });
-            const total = vatMode === 'exclude' ? Math.round(subtotal * 1.1) : Math.round(subtotal);
-            document.getElementById('grand-total').textContent = total.toLocaleString();
+
+            if (vatMode === 'exclude') {
+                grandTotal = Math.round(subtotal * 1.1);
+            } else {
+                subtotal = Math.round(grandTotal / 1.1);
+            }
+
+            const tax = grandTotal - subtotal;
+
+            // 메인 UI 업데이트
+            document.getElementById('grand-total').textContent = grandTotal.toLocaleString();
             
-            // 미리보기 창이 열려있다면 즉시 반영
-            if(document.getElementById('preview-modal').style.display !== 'none') buildPreview();
+            // 미리보기 모달 데이터 업데이트 (열려있든 닫혀있든 최신화)
+            updatePreviewValues(subtotal, tax, grandTotal);
             
-            return { subtotal, total };
+            return { subtotal, tax, grandTotal };
+        };
+
+        const updatePreviewValues = (sub, tx, total) => {
+            document.getElementById('p-subtotal').textContent = sub.toLocaleString();
+            document.getElementById('p-tax').textContent = tx.toLocaleString();
+            document.getElementById('p-total').textContent = total.toLocaleString();
         };
 
         window.setVatMode = (mode) => {
             vatMode = mode;
-            document.getElementById('vat-exclude-btn').className = mode === 'exclude' ? 'px-4 py-2 rounded-lg text-xs font-black bg-white shadow-sm text-blue-600' : 'px-4 py-2 rounded-lg text-xs font-black text-slate-500';
-            document.getElementById('vat-include-btn').className = mode === 'include' ? 'px-4 py-2 rounded-lg text-xs font-black bg-white shadow-sm text-blue-600' : 'px-4 py-2 rounded-lg text-xs font-black text-slate-500';
+            const exBtn = document.getElementById('vat-exclude-btn');
+            const inBtn = document.getElementById('vat-include-btn');
+            
+            if(mode === 'exclude') {
+                exBtn.className = 'px-4 py-2 rounded-lg text-xs font-black bg-white shadow-sm text-blue-600';
+                inBtn.className = 'px-4 py-2 rounded-lg text-xs font-black text-slate-500 hover:text-slate-700';
+            } else {
+                inBtn.className = 'px-4 py-2 rounded-lg text-xs font-black bg-white shadow-sm text-blue-600';
+                exBtn.className = 'px-4 py-2 rounded-lg text-xs font-black text-slate-500 hover:text-slate-700';
+            }
             calculateTotal();
+            if(document.getElementById('preview-modal').style.display !== 'none') buildPreview();
         };
 
-        const updateLivePreviewTitle = () => {
-            const client = document.getElementById('client-name').value;
-            const task = document.getElementById('doc-title').value;
-            const now = new Date();
-            const dateStr = now.getFullYear().toString().slice(-2) + (now.getMonth() + 1).toString().padStart(2, '0') + now.getDate().toString().padStart(2, '0');
-            document.getElementById('live-title-preview').textContent = `${dateStr}_${client || '업체명'}_${task || '과업명'}`;
+        window.updateLivePreviewTitle = () => {
+            const client = document.getElementById('client-name').value || '업체명';
+            const task = document.getElementById('doc-title').value || '과업명';
+            const rawDate = document.getElementById('invoice-date').value || new Date().toISOString().split('T')[0];
+            const dateStr = rawDate.replace(/-/g, '').slice(2);
+            document.getElementById('live-title-preview').textContent = `${dateStr}_${client}_${task}`;
+            document.getElementById('p-client').textContent = client;
         };
 
         window.handleSave = async () => {
             if (!currentUser) return;
             const clientName = document.getElementById('client-name').value;
-            if (!clientName) { showNotify("클라이언트명을 입력하세요", "error"); return; }
+            if (!clientName) { showNotify("클라이언트명을 입력하세요.", "error"); return; }
+            
+            const { subtotal, grandTotal } = calculateTotal();
             const docData = {
                 clientName,
                 docTitle: document.getElementById('doc-title').value,
@@ -142,14 +445,34 @@
                 invoiceDate: document.getElementById('invoice-date').value,
                 items,
                 vatMode,
-                totalAmount: calculateTotal().total,
+                totalAmount: grandTotal,
                 updatedAt: serverTimestamp()
             };
+
             try {
-                if (currentDocId) await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'invoices', currentDocId), docData);
-                else { const docRef = await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'invoices'), docData); currentDocId = docRef.id; }
-                showNotify("보관함에 저장되었습니다.");
-            } catch (e) { showNotify("저장 실패", "error"); }
+                if (currentDocId) {
+                    await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'invoices', currentDocId), docData);
+                } else {
+                    const docRef = await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'invoices'), docData);
+                    currentDocId = docRef.id;
+                }
+                showNotify("보관함에 성공적으로 저장되었습니다.");
+            } catch (e) { 
+                showNotify("저장 중 오류 발생", "error"); 
+            }
+        };
+
+        window.createNewDoc = () => {
+            currentDocId = null;
+            document.getElementById('doc-title').value = '';
+            document.getElementById('client-name').value = '';
+            document.getElementById('invoice-date').value = new Date().toISOString().split('T')[0];
+            items = [{ id: Date.now(), name: '', qty: '', price: '' }];
+            vatMode = 'exclude';
+            setVatMode('exclude');
+            renderItems();
+            updateLivePreviewTitle();
+            showNotify("새 문서가 준비되었습니다.");
         };
 
         window.togglePreview = () => {
@@ -160,51 +483,81 @@
         };
 
         window.buildPreview = () => {
-            const client = document.getElementById('client-name').value;
-            const date = document.getElementById('invoice-date').value || new Date().toISOString().split('T')[0];
-            const [y, m, d] = date.split('-');
-
-            const filteredItems = items.filter(i => i.name).map(item => {
-                const q = parseFloat(item.qty) || 0;
-                const p = parseFloat(item.price) || 0;
-                let sp = (vatMode === 'exclude') ? p : Math.round(p / 1.1);
-                return { n: item.name, q, sp, amt: Math.round(q * sp) };
-            });
-
-            const { subtotal, total } = calculateTotal();
-            const tax = total - filteredItems.reduce((acc, cur) => acc + cur.amt, 0);
-
-            document.getElementById('p-client').textContent = client || '(미입력)';
+            const dateVal = document.getElementById('invoice-date').value || new Date().toISOString().split('T')[0];
+            const [y, m, d] = dateVal.split('-');
             document.getElementById('p-date').textContent = `${y}년 ${m}월 ${d}일`;
-            
+
             const tbody = document.getElementById('p-items-body');
             tbody.innerHTML = '';
-            filteredItems.forEach((it, idx) => {
-                tbody.innerHTML += `<tr class="h-[34px] text-[12px]"><td class="border border-black text-center">${idx + 1}</td><td class="border border-black text-left px-3 font-bold">${it.n}</td><td class="border border-black text-center">${it.q}</td><td class="border border-black text-right px-3">${it.sp.toLocaleString()}</td><td class="border border-black text-right px-3 font-black">${it.amt.toLocaleString()}</td><td class="border border-black"></td></tr>`;
+            
+            // 필터링 및 렌더링
+            const validItems = items.filter(i => i.name.trim() !== '');
+            
+            validItems.forEach((it, idx) => {
+                const q = parseFloat(it.qty) || 0;
+                const p = parseFloat(it.price) || 0;
+                
+                let unitPrice, totalRow;
+                if(vatMode === 'exclude') {
+                    unitPrice = p;
+                    totalRow = q * p;
+                } else {
+                    unitPrice = Math.round(p / 1.1);
+                    totalRow = Math.round((p / 1.1) * q);
+                }
+
+                tbody.innerHTML += `
+                    <tr class="h-10 text-[12px]">
+                        <td class="border border-black text-center">${idx + 1}</td>
+                        <td class="border border-black text-left px-3 font-bold">${it.name}</td>
+                        <td class="border border-black text-center">${q.toLocaleString()}</td>
+                        <td class="border border-black text-right px-3">${unitPrice.toLocaleString()}</td>
+                        <td class="border border-black text-right px-3 font-black">${totalRow.toLocaleString()}</td>
+                        <td class="border border-black"></td>
+                    </tr>
+                `;
             });
 
-            for(let i = filteredItems.length; i < 8; i++) {
-                tbody.innerHTML += `<tr class="h-[34px] text-[12px]"><td class="border border-black text-center text-slate-200">${i+1}</td><td class="border border-black"></td><td class="border border-black"></td><td class="border border-black"></td><td class="border border-black"></td><td class="border border-black"></td></tr>`;
+            // 빈 행 채우기 (최소 8행 유지)
+            const emptyRows = Math.max(0, 8 - validItems.length);
+            for(let i = 0; i < emptyRows; i++) {
+                tbody.innerHTML += `
+                    <tr class="h-10 text-[12px]">
+                        <td class="border border-black text-center text-slate-100">${validItems.length + i + 1}</td>
+                        <td class="border border-black"></td>
+                        <td class="border border-black"></td>
+                        <td class="border border-black"></td>
+                        <td class="border border-black"></td>
+                        <td class="border border-black"></td>
+                    </tr>
+                `;
             }
-
-            document.getElementById('p-subtotal').textContent = filteredItems.reduce((acc, cur) => acc + cur.amt, 0).toLocaleString();
-            document.getElementById('p-tax').textContent = (total - filteredItems.reduce((acc, cur) => acc + cur.amt, 0)).toLocaleString();
-            document.getElementById('p-total').textContent = total.toLocaleString();
+            calculateTotal(); // 최종 금액 다시 바인딩
         };
 
+        // --- Firebase Listeners ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
                 document.getElementById('login-overlay').classList.add('hidden');
                 document.getElementById('main-app').classList.remove('hidden');
+                
+                // 데이터 실시간 동기화
                 const q = collection(db, 'artifacts', appId, 'users', user.uid, 'invoices');
                 onSnapshot(q, (snapshot) => {
                     savedDocs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                     const repo = document.getElementById('repo-container');
-                    repo.innerHTML = savedDocs.map(d => `
-                        <div onclick="loadDoc('${d.id}')" class="p-4 bg-white border rounded-xl mb-2 cursor-pointer hover:border-blue-500 shadow-sm">
-                            <h4 class="font-bold text-xs truncate">${d.clientName}</h4>
-                            <p class="text-[9px] text-slate-400 mt-1">${d.fullTitle?.split('_')[0] || ''}</p>
+                    if(savedDocs.length === 0) {
+                        repo.innerHTML = '<p class="text-xs text-slate-400 text-center py-10">저장된 문서가 없습니다.</p>';
+                        return;
+                    }
+                    repo.innerHTML = savedDocs.sort((a,b) => b.updatedAt - a.updatedAt).map(d => `
+                        <div onclick="loadDoc('${d.id}')" class="p-4 bg-white border border-slate-200 rounded-2xl cursor-pointer hover:border-blue-500 hover:shadow-md transition-all">
+                            <h4 class="font-bold text-sm text-slate-800 truncate">${d.clientName}</h4>
+                            <div class="flex justify-between items-center mt-2">
+                                <p class="text-[10px] font-bold text-blue-600">${d.invoiceDate}</p>
+                                <p class="text-[10px] font-black text-slate-400">₩${d.totalAmount?.toLocaleString()}</p>
+                            </div>
                         </div>
                     `).join('');
                 });
@@ -213,191 +566,25 @@
 
         window.loadDoc = (id) => {
             const d = savedDocs.find(x => x.id === id);
+            if(!d) return;
             currentDocId = id;
             document.getElementById('client-name').value = d.clientName;
             document.getElementById('doc-title').value = d.docTitle || '';
             document.getElementById('invoice-date').value = d.invoiceDate;
-            items = d.items;
-            vatMode = d.vatMode;
+            items = [...d.items];
+            vatMode = d.vatMode || 'exclude';
+            setVatMode(vatMode);
             renderItems();
+            updateLivePreviewTitle();
             showNotify("문서를 불러왔습니다.");
         };
 
         window.onload = () => {
             document.getElementById('invoice-date').value = new Date().toISOString().split('T')[0];
             renderItems();
+            updateLivePreviewTitle();
+            lucide.createIcons();
         };
     </script>
-
-    <style>
-        @media print {
-            /* 브라우저 강제 머리글/바닥글 제거 */
-            @page { size: A4; margin: 0; }
-            html, body { 
-                margin: 0 !important; 
-                padding: 0 !important; 
-                background: white !important; 
-                -webkit-print-color-adjust: exact !important;
-                width: 210mm;
-                height: 297mm;
-                overflow: hidden !important; /* 추가 페이지 생성 방지 */
-            }
-            body * { visibility: hidden; }
-            #notification, header, aside, .sticky, #login-overlay { display: none !important; }
-
-            /* 인쇄 본문 영역 */
-            #print-area, #print-area * { visibility: visible; }
-            #print-area { 
-                position: absolute; 
-                left: 0; top: 0; 
-                width: 210mm; 
-                margin: 0; 
-                padding: 0;
-            }
-            
-            .print-page-shadow { 
-                box-shadow: none !important; 
-                border: none !important; 
-                width: 210mm !important; 
-                padding: 12mm 15mm !important; /* 상단 여백 타이트하게 조정하여 1페이지 안착 */
-                margin: 0 !important;
-                box-sizing: border-box;
-                min-height: 297mm;
-            }
-
-            /* 9행부터 자동으로 넘어갈 때 제목은 반복 안 함 */
-            .print-header-top { display: block; }
-            .print-footer-container { page-break-inside: avoid; margin-top: 5mm; }
-        }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-    </style>
-</head>
-<body class="bg-[#F8FAFC] text-[#1E293B] font-sans">
-
-    <div id="notification" style="display: none;"></div>
-
-    <!-- Login -->
-    <div id="login-overlay" class="fixed inset-0 z-[500] bg-slate-900 flex items-center justify-center p-6">
-        <div class="bg-white w-full max-w-md p-10 rounded-[40px] shadow-2xl text-center">
-            <h2 class="text-3xl font-black mb-10 tracking-tighter">MAY STUDIO</h2>
-            <form onsubmit="handleLogin(event)" class="space-y-4">
-                <input id="login-email" type="email" placeholder="관리자 이메일" required class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none">
-                <input id="login-pw" type="password" placeholder="비밀번호" required class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none">
-                <button type="submit" class="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-lg active:scale-95 transition-all">로그인</button>
-            </form>
-            <button onclick="handleSignUp()" class="mt-8 text-blue-600 font-bold text-sm">신규 계정 생성</button>
-        </div>
-    </div>
-
-    <!-- UI -->
-    <div id="main-app" class="hidden">
-        <header class="max-w-6xl mx-auto p-6 flex justify-between items-center">
-            <h1 class="text-2xl font-black tracking-tight">MAY STUDIO</h1>
-            <div class="flex gap-2">
-                <button onclick="createNew()" class="px-5 py-2.5 bg-white border rounded-xl text-sm font-bold active:scale-95">새 문서</button>
-                <button onclick="handleSave()" class="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold shadow-xl active:scale-95">저장</button>
-                <button onclick="handleLogout()" class="px-3 py-2 text-slate-400 text-xs font-bold">로그아웃</button>
-            </div>
-        </header>
-
-        <main class="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <div class="lg:col-span-3 space-y-6">
-                <section class="bg-white p-8 rounded-[32px] border shadow-sm">
-                    <div class="mb-8 p-6 bg-slate-50 rounded-2xl flex flex-col md:flex-row md:items-center gap-6">
-                        <div class="flex-1">
-                            <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block">과업 명칭 (보관용)</label>
-                            <input id="doc-title" type="text" oninput="updateLivePreviewTitle()" placeholder="예: 브랜드 디자인 프로젝트" class="w-full bg-transparent border-b-2 font-bold text-lg outline-none focus:border-blue-600 py-1">
-                        </div>
-                        <p id="live-title-preview" class="text-xs font-bold text-blue-700 italic opacity-60"></p>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                        <input id="client-name" type="text" placeholder="클라이언트 명칭" oninput="updateLivePreviewTitle()" class="p-4 bg-slate-50 border rounded-2xl font-bold outline-none">
-                        <input id="invoice-date" type="date" class="p-4 bg-slate-50 border rounded-2xl font-medium outline-none">
-                    </div>
-
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="font-black text-lg">상세 항목</h3>
-                        <div class="flex bg-slate-100 p-1 rounded-xl">
-                            <button id="vat-exclude-btn" onclick="setVatMode('exclude')" class="px-4 py-2 rounded-lg text-xs font-black bg-white shadow-sm text-blue-600">VAT 별도</button>
-                            <button id="vat-include-btn" onclick="setVatMode('include')" class="px-4 py-2 rounded-lg text-xs font-black text-slate-500">VAT 포함</button>
-                        </div>
-                    </div>
-
-                    <div id="items-container"></div>
-                    <button onclick="addItem()" class="mt-4 w-full py-4 border-2 border-dashed rounded-2xl text-slate-400 font-bold hover:bg-blue-50 transition-all">+ 항목 추가</button>
-                </section>
-
-                <div class="bg-slate-900 rounded-[32px] p-10 text-white flex justify-between items-center shadow-2xl">
-                    <div><p class="text-xs font-bold text-blue-400 mb-1">총 합계 금액</p><h2 class="text-5xl font-black tracking-tighter"><span id="grand-total">0</span> KRW</h2></div>
-                    <button onclick="togglePreview()" class="px-10 py-5 bg-blue-600 rounded-2xl font-black text-lg active:scale-95 transition-all">문서 미리보기</button>
-                </div>
-            </div>
-            <aside>
-                <div class="bg-white p-6 border rounded-[32px] shadow-sm min-h-[400px]">
-                    <h3 class="font-black text-sm text-slate-400 uppercase mb-6 tracking-widest">Repository</h3>
-                    <div id="repo-container" class="custom-scrollbar overflow-y-auto max-h-[600px]"></div>
-                </div>
-            </aside>
-        </main>
-    </div>
-
-    <!-- Preview Modal -->
-    <div id="preview-modal" style="display:none;" class="fixed inset-0 bg-slate-900/98 backdrop-blur-xl z-[550] overflow-y-auto">
-        <div class="sticky top-0 z-[600] w-full bg-slate-900/80 px-8 py-4 flex justify-between items-center border-b border-white/5">
-            <button onclick="togglePreview()" class="px-6 py-3 bg-white/10 text-white rounded-2xl font-bold active:scale-95"><i data-lucide="x"></i></button>
-            <button onclick="window.print()" class="px-10 py-3 bg-blue-600 text-white rounded-2xl font-black flex items-center gap-2 active:scale-95 shadow-xl"><i data-lucide="printer"></i> 인쇄 / PDF 저장</button>
-        </div>
-
-        <div id="print-area" class="flex justify-center p-4">
-            <div class="bg-white relative print-page-shadow" style="width: 210mm; min-height: 297mm; padding: 10mm 15mm;">
-                <div class="print-header-top">
-                    <h1 class="text-center font-black underline underline-offset-[12px] decoration-4 mb-10 tracking-[20px] text-5xl uppercase">견 적 서</h1>
-                    <div class="flex justify-between items-start mb-8">
-                        <div class="w-[45%] pt-2">
-                            <div class="text-3xl font-black border-b-[3px] border-black inline-block pb-1 pr-10 mb-4"><span id="p-client">귀하</span> <span class="text-xl font-normal ml-2">귀하</span></div>
-                            <div id="p-date" class="text-lg font-bold text-slate-600 mb-4"></div>
-                            <p class="text-[11px] text-slate-500 font-medium">아래와 같이 견적/명세합니다.</p>
-                        </div>
-                        <div class="w-[400px]">
-                            <table class="w-full border-collapse border-[1.5px] border-black text-[12px] table-fixed">
-                                <tbody>
-                                    <tr><td class="border border-black bg-slate-50 font-black text-center w-20 py-1.5">사업자번호</td><td colSpan="3" class="border border-black text-center font-black tracking-widest">322-15-02616</td></tr>
-                                    <tr>
-                                        <td class="border border-black bg-slate-50 font-black text-center py-2">상 호</td><td class="border border-black text-center font-bold px-1 break-keep leading-tight text-[11px]">메이스튜디오</td>
-                                        <td class="border border-black bg-slate-50 font-black text-center w-14">성 명</td>
-                                        <td class="border border-black text-center relative py-1.5 overflow-visible">
-                                            <span class="font-bold mr-8">정윤희</span><span class="relative z-10 text-[10px] pl-1">(인)</span>
-                                            <img src="stamp.png" alt="도장" class="absolute top-1/2 right-1 -translate-y-1/2 w-10 h-10 object-contain pointer-events-none z-20 rotate-12 opacity-90" onerror="this.style.display='none'">
-                                        </td>
-                                    </tr>
-                                    <tr><td class="border border-black bg-slate-50 font-black text-center py-2">주 소</td><td colSpan="3" class="border border-black text-left px-3 text-[10px] py-1.5 leading-tight break-keep">창원시 성산구 중앙대로 33 대흥인터빌 519호</td></tr>
-                                    <tr><td class="border border-black bg-slate-50 font-black text-center py-2">연락처</td><td class="border border-black text-center font-bold text-[11px]">010-3560-5859</td><td class="border border-black bg-slate-50 font-black text-center">이메일</td><td class="border border-black text-center text-[10px] px-1 leading-tight break-all font-medium">contact<br>@maystudio.kr</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <table class="w-full border-collapse border-[1.5px] border-black text-[12px] mb-4">
-                    <thead><tr class="bg-slate-100 h-9"><th class="border border-black w-12 font-black text-center">번호</th><th class="border border-black font-black text-center">품목 및 과업내용</th><th class="border border-black w-14 font-black text-center">수량</th><th class="border border-black w-24 font-black text-center">단가(원)</th><th class="border border-black w-32 font-black text-center">금액(원)</th><th class="border border-black w-16 font-black text-center text-[10px]">비고</th></tr></thead>
-                    <tbody id="p-items-body"></tbody>
-                    <tfoot>
-                        <tr class="h-9 bg-slate-50"><td colSpan="4" class="border border-black text-right pr-6 font-bold text-slate-600">소계 (공급가액)</td><td id="p-subtotal" colSpan="2" class="border border-black text-right px-3 font-bold">0</td></tr>
-                        <tr class="h-9 bg-slate-50"><td colSpan="4" class="border border-black text-right pr-6 font-bold text-slate-600">부가가치세 (10%)</td><td id="p-tax" colSpan="2" class="border border-black text-right px-3 font-bold">0</td></tr>
-                        <tr class="h-12 bg-slate-100"><td colSpan="4" class="border border-black text-right pr-6 font-black text-xl uppercase tracking-tighter">합계 금액 (VAT 포함)</td><td id="p-total" colSpan="2" class="border border-black text-right px-3 font-black text-2xl text-blue-700">0</td></tr>
-                    </tfoot>
-                </table>
-
-                <div class="print-footer-container">
-                    <div class="p-4 border-2 border-slate-900 rounded-3xl font-black bg-slate-50 flex items-center justify-between mb-6 shadow-sm"><div class="flex items-center gap-4"><span class="bg-slate-900 text-white px-3 py-1 rounded-lg text-xs uppercase tracking-tight">입금 계좌 정보</span><span class="text-lg">농협 302-1456-7890-11 (예금주: 정윤희)</span></div></div>
-                    <div class="grid grid-cols-[1.6fr_0.4fr] gap-10">
-                        <div class="space-y-2"><h5 class="text-[11px] font-black text-slate-400 uppercase tracking-widest">참고 및 유의사항</h5><ul class="text-[10px] text-slate-600 space-y-1 list-disc pl-5 font-medium leading-relaxed"><li>본 문서는 발행일로부터 30일간 유효합니다.</li><li class="whitespace-nowrap">작업 범위가 협의 내용보다 확장될 경우 추가 견적이 발생할 수 있습니다.</li><li>최종 결과물의 저작권은 잔금 지급이 완료된 시점에 귀속됩니다.</li><li>시안 확정 후에는 단순 변심으로 인한 환불이 불가합니다.</li></ul></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 </body>
 </html>
