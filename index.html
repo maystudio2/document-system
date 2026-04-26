@@ -3,366 +3,282 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MayStudio | Secure Sync Portal</title>
+    <title>MayStudio | Secure System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@100;400;700;900&display=swap');
-        body { font-family: 'Pretendard', sans-serif; }
-        
-        /* 로딩 애니메이션 */
-        .loader-ring {
-            display: inline-block;
-            width: 80px;
-            height: 80px;
-        }
-        .loader-ring:after {
-            content: " ";
-            display: block;
-            width: 64px;
-            height: 64px;
-            margin: 8px;
+        body { font-family: 'Pretendard', sans-serif; overflow-x: hidden; }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2563eb;
             border-radius: 50%;
-            border: 6px solid #2563eb;
-            border-color: #2563eb transparent #2563eb transparent;
-            animation: loader-ring 1.2s linear infinite;
+            animation: spin 1s linear infinite;
         }
-        @keyframes loader-ring {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .no-print { display: block; }
-        @media print {
-            .no-print { display: none !important; }
-            #print-wrap { display: block !important; }
-        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900">
+<body class="bg-slate-50">
 
-    <!-- 시스템 초기화 레이어 (최상위) -->
-    <div id="setup-layer" class="fixed inset-0 bg-white z-[9999] flex flex-col items-center justify-center transition-opacity duration-700">
-        <div class="loader-ring"></div>
-        <div class="mt-8 text-center">
-            <h2 id="setup-status" class="text-xl font-black text-slate-800">보안 세션 구성 중...</h2>
-            <p id="setup-substatus" class="text-sm text-slate-400 mt-2">Firebase 인스턴스를 초기화하고 있습니다.</p>
-        </div>
-        <!-- 에러 발생 시 노출 -->
-        <div id="setup-error" class="hidden mt-10 p-6 bg-red-50 rounded-2xl border border-red-100 max-w-sm text-center">
-            <p class="text-red-600 font-bold text-sm">연결에 실패했습니다.</p>
-            <button onclick="location.reload()" class="mt-4 px-6 py-2 bg-red-600 text-white rounded-xl text-xs font-bold">재시도</button>
-        </div>
+    <!-- 초기 로딩/에러 화면 -->
+    <div id="init-screen" class="fixed inset-0 z-[10000] bg-white flex flex-col items-center justify-center p-6 transition-all duration-500">
+        <div id="loading-spinner" class="spinner"></div>
+        <div id="error-icon" class="hidden mb-4 text-red-500 text-5xl"><i class="fas fa-exclamation-triangle"></i></div>
+        
+        <h1 id="status-title" class="mt-6 text-xl font-black text-slate-800 text-center">시스템 보안 연결 중</h1>
+        <p id="status-msg" class="mt-2 text-slate-400 text-sm text-center">Firebase 인스턴스를 초기화하고 있습니다...</p>
+        
+        <button id="retry-btn" onclick="location.reload()" class="hidden mt-8 px-8 py-3 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all">
+            연결 재시도
+        </button>
     </div>
 
-    <!-- 메인 애플리케이션 UI -->
-    <div id="app-container" class="invisible opacity-0 transition-all duration-1000">
-        <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 no-print">
-            <div class="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black">M</div>
-                    <span class="font-black text-lg">MayStudio <span class="text-blue-600">Enterprise</span></span>
+    <!-- 메인 UI -->
+    <div id="app-content" class="invisible opacity-0 transition-opacity duration-1000">
+        <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+                <div class="flex items-center gap-2 font-black text-blue-600 text-lg">
+                    <i class="fas fa-layer-group"></i> MayStudio
                 </div>
-                <div id="connection-status" class="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-full text-[10px] font-black text-slate-400">
-                    <div class="w-2 h-2 bg-slate-300 rounded-full"></div> AUTH REQUIRED
+                <div id="user-indicator" class="text-[10px] font-bold px-3 py-1 bg-slate-100 rounded-full text-slate-500">
+                    세션 확인 중...
                 </div>
             </div>
-        </header>
+        </nav>
 
-        <main class="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-8 no-print">
-            <!-- 입력 영역 -->
-            <section class="lg:col-span-8 space-y-6">
-                <div class="bg-white rounded-[32px] shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden">
-                    <div class="p-8 border-b border-slate-100 flex justify-between items-center">
-                        <div>
-                            <h3 class="text-xl font-black">새 견적서 생성</h3>
-                            <p class="text-sm text-slate-400 mt-1">클라우드와 실시간으로 동기화됩니다.</p>
-                        </div>
-                        <div class="flex bg-slate-100 p-1 rounded-xl">
-                            <button onclick="toggleTax(true)" id="tax-on" class="px-4 py-2 rounded-lg text-xs font-bold transition-all">VAT 별도</button>
-                            <button onclick="toggleTax(false)" id="tax-off" class="px-4 py-2 rounded-lg text-xs font-bold transition-all">VAT 포함</button>
-                        </div>
-                    </div>
-
-                    <div class="p-8 space-y-8">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="space-y-2">
-                                <label class="text-[11px] font-black text-slate-400 uppercase ml-1">Client</label>
-                                <input type="text" id="client-name" placeholder="고객사명" class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-bold">
-                            </div>
-                            <div class="space-y-2">
-                                <label class="text-[11px] font-black text-slate-400 uppercase ml-1">Date</label>
-                                <input type="date" id="doc-date" class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-bold">
-                            </div>
-                        </div>
-
-                        <div class="space-y-4">
-                            <div class="flex justify-between items-center">
-                                <h4 class="font-bold text-slate-700">세부 항목</h4>
-                                <button onclick="addNewRow()" class="text-xs font-black text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100">
-                                    <i class="fas fa-plus mr-1"></i> 항목 추가
-                                </button>
-                            </div>
-                            <div id="items-container" class="space-y-3"></div>
-                        </div>
-                    </div>
-
-                    <div class="p-8 bg-slate-900 flex flex-col md:flex-row justify-between items-center gap-6 text-white">
-                        <div>
-                            <span class="text-blue-400 font-bold text-[10px] uppercase tracking-widest">Grand Total</span>
-                            <div id="total-display" class="text-3xl font-black mt-1">0원</div>
-                        </div>
-                        <div class="flex gap-3 w-full md:w-auto">
-                            <button onclick="handleCloudSave()" id="save-trigger" class="flex-1 md:flex-none px-8 py-4 bg-white/10 rounded-2xl font-bold hover:bg-white/20">
+        <main class="max-w-7xl mx-auto p-4 md:p-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- 입력부 -->
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 md:p-8">
+                        <div class="flex justify-between items-center mb-8">
+                            <h2 class="text-2xl font-black text-slate-800">새 견적 작성</h2>
+                            <button onclick="saveToCloud()" id="save-btn" class="px-6 py-3 bg-blue-600 text-white rounded-2xl font-black hover:bg-blue-700 transition-all disabled:opacity-50">
                                 <i class="fas fa-cloud-upload-alt mr-2"></i> 클라우드 저장
                             </button>
-                            <button onclick="window.print()" class="flex-1 md:flex-none px-10 py-4 bg-blue-600 rounded-2xl font-black hover:bg-blue-500">
-                                <i class="fas fa-print mr-2"></i> 인쇄하기
-                            </button>
+                        </div>
+
+                        <div class="space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="space-y-2">
+                                    <label class="text-xs font-bold text-slate-400 uppercase">고객사 명</label>
+                                    <input type="text" id="client" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="Client Name">
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-xs font-bold text-slate-400 uppercase">발행 일자</label>
+                                    <input type="date" id="date" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none">
+                                </div>
+                            </div>
+
+                            <div class="pt-4 border-t border-slate-100">
+                                <div id="items-list" class="space-y-3">
+                                    <!-- Dynamic Items -->
+                                </div>
+                                <button onclick="addItem()" class="mt-4 w-full py-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 font-bold hover:border-blue-300 hover:text-blue-500 transition-all">
+                                    + 항목 추가하기
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </section>
 
-            <!-- 히스토리 사이드바 -->
-            <aside class="lg:col-span-4">
-                <div class="bg-white rounded-[32px] border border-slate-200 p-6 sticky top-24">
-                    <h4 class="font-black text-slate-800 mb-6 flex items-center gap-2">
-                        <i class="fas fa-history text-blue-600"></i> 저장된 견적 내역
-                    </h4>
-                    <div id="history-list" class="space-y-3 max-h-[600px] overflow-y-auto pr-2">
-                        <div class="text-center py-20 text-slate-300 text-sm">데이터를 기다리는 중...</div>
+                <!-- 히스토리 -->
+                <div class="space-y-6">
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6">
+                        <h3 class="font-black text-slate-800 mb-6 flex items-center gap-2">
+                            <i class="fas fa-history text-blue-500"></i> 최근 기록
+                        </h3>
+                        <div id="history-container" class="space-y-3">
+                            <div class="text-center py-10 text-slate-300 text-sm italic">데이터를 불러오고 있습니다...</div>
+                        </div>
                     </div>
                 </div>
-            </aside>
+            </div>
         </main>
     </div>
-
-    <!-- 출력용 템플릿 (Hidden) -->
-    <div id="print-wrap" class="hidden"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Global State
-        const state = {
-            appId: typeof __app_id !== 'undefined' ? __app_id : 'maystudio-v3',
-            user: null,
-            db: null,
-            auth: null,
-            isTaxSeparate: true,
-            activeId: null
+        const UI = {
+            init: document.getElementById('init-screen'),
+            spinner: document.getElementById('loading-spinner'),
+            error: document.getElementById('error-icon'),
+            title: document.getElementById('status-title'),
+            msg: document.getElementById('status-msg'),
+            retry: document.getElementById('retry-btn'),
+            app: document.getElementById('app-content'),
+            indicator: document.getElementById('user-indicator')
         };
 
-        // UI Helpers
-        const updateStatus = (msg, sub) => {
-            document.getElementById('setup-status').innerText = msg;
-            document.getElementById('setup-substatus').innerText = sub;
-        };
+        let db, auth, user, currentAppId;
 
-        const showError = () => {
-            document.getElementById('setup-error').classList.remove('hidden');
-            document.querySelector('.loader-ring').style.display = 'none';
-            updateStatus('연결 중단됨', '네트워크 또는 보안 설정을 확인하세요.');
-        };
-
-        // Firebase Core Logic (The "Fixed" Way)
-        async function startSystem() {
-            try {
-                // 1. Initialize Firebase
-                const firebaseConfig = JSON.parse(__firebase_config);
-                const app = initializeApp(firebaseConfig);
-                state.auth = getAuth(app);
-                state.db = getFirestore(app);
-                
-                updateStatus('보안 인증 시도 중', '사용자 세션을 확인하고 있습니다...');
-
-                // 2. Strict Auth Handling (Rule 3)
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(state.auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(state.auth);
-                }
-
-                // 3. Wait for Auth State Confirmation
-                onAuthStateChanged(state.auth, (user) => {
-                    if (user) {
-                        state.user = user;
-                        finalizeBoot();
+        // --- 재시도 로직 포함된 인증 함수 ---
+        async function robustAuth(authInstance, token, retries = 5) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    if (token) {
+                        return await signInWithCustomToken(authInstance, token);
                     } else {
-                        showError();
+                        return await signInAnonymously(authInstance);
+                    }
+                } catch (err) {
+                    const delay = Math.pow(2, i) * 1000;
+                    if (i === retries - 1) throw err;
+                    await new Promise(res => setTimeout(res, delay));
+                }
+            }
+        }
+
+        async function initSystem() {
+            try {
+                // 1. Config 파싱
+                if (typeof __firebase_config === 'undefined') throw new Error("Firebase Config Missing");
+                const firebaseConfig = JSON.parse(__firebase_config);
+                currentAppId = typeof __app_id !== 'undefined' ? __app_id : 'default-studio';
+
+                // 2. 초기화
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                UI.msg.innerText = "사용자 인증 세션을 확보하는 중...";
+
+                // 3. 인증 실행 (Rule 3 준수)
+                const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                await robustAuth(auth, token);
+
+                // 4. 상태 대기
+                onAuthStateChanged(auth, (u) => {
+                    if (u) {
+                        user = u;
+                        UI.indicator.innerText = `ID: ${u.uid.slice(0, 8)}...`;
+                        launchApp();
+                    } else {
+                        throw new Error("Auth State Failed");
                     }
                 });
 
             } catch (err) {
-                console.error("Critical Boot Error:", err);
-                showError();
+                console.error(err);
+                UI.spinner.classList.add('hidden');
+                UI.error.classList.remove('hidden');
+                UI.title.innerText = "연결 중단됨";
+                UI.msg.innerText = "보안 토큰 만료 또는 네트워크 오류가 발생했습니다.";
+                UI.retry.classList.remove('hidden');
             }
         }
 
-        function finalizeBoot() {
-            // Update Connection UI
-            const indicator = document.getElementById('connection-status');
-            indicator.innerHTML = `<div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div> SECURE CONNECTED (UID: ${state.user.uid.slice(0,6)}...)`;
-            indicator.className = "flex items-center gap-2 px-3 py-1.5 bg-green-50 rounded-full text-[10px] font-black text-green-600 border border-green-100";
-
-            // Show App
-            const setup = document.getElementById('setup-layer');
-            const app = document.getElementById('app-container');
-            setup.style.opacity = '0';
+        function launchApp() {
+            UI.init.style.opacity = '0';
             setTimeout(() => {
-                setup.style.display = 'none';
-                app.classList.remove('invisible');
-                app.classList.add('opacity-100');
-                initAppLogic();
-                syncData();
-            }, 700);
+                UI.init.style.display = 'none';
+                UI.app.classList.remove('invisible');
+                UI.app.classList.add('opacity-100');
+                
+                // 데이터 바인딩 시작
+                loadHistory();
+                addItem(); // 기본 항목 하나 추가
+            }, 500);
         }
 
-        // App Business Logic
-        function initAppLogic() {
-            document.getElementById('doc-date').value = new Date().toISOString().split('T')[0];
-            toggleTax(true);
-            addNewRow();
-        }
-
-        window.toggleTax = (val) => {
-            state.isTaxSeparate = val;
-            const on = document.getElementById('tax-on');
-            const off = document.getElementById('tax-off');
-            if(val) {
-                on.className = "px-4 py-2 rounded-lg text-xs font-black bg-blue-600 text-white shadow-lg";
-                off.className = "px-4 py-2 rounded-lg text-xs font-bold text-slate-400";
-            } else {
-                off.className = "px-4 py-2 rounded-lg text-xs font-black bg-blue-600 text-white shadow-lg";
-                on.className = "px-4 py-2 rounded-lg text-xs font-bold text-slate-400";
-            }
-            calculate();
-        };
-
-        window.addNewRow = (n='', q=1, p='') => {
-            const container = document.getElementById('items-container');
-            const div = document.createElement('div');
-            div.className = "flex gap-3 items-center p-4 bg-white border border-slate-100 rounded-2xl group hover:border-blue-200 transition-all";
-            div.innerHTML = `
-                <input type="text" value="${n}" placeholder="항목명" class="i-name flex-grow bg-transparent outline-none font-bold text-slate-700">
-                <input type="number" value="${q}" placeholder="수량" class="i-qty w-16 text-center bg-slate-50 py-2 rounded-xl outline-none font-black text-slate-800">
-                <input type="number" value="${p}" placeholder="단가" class="i-price w-32 text-right bg-slate-50 py-2 px-3 rounded-xl outline-none font-black text-blue-600">
-                <button onclick="this.parentElement.remove(); calculate();" class="text-slate-200 hover:text-red-500 p-2"><i class="fas fa-times-circle"></i></button>
+        // --- 앱 비즈니스 로직 ---
+        window.addItem = () => {
+            const list = document.getElementById('items-list');
+            const row = document.createElement('div');
+            row.className = "flex gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100 items-center animate-slide-up";
+            row.innerHTML = `
+                <input type="text" placeholder="항목명" class="flex-grow bg-transparent outline-none font-bold text-slate-700">
+                <input type="number" placeholder="0" class="w-20 bg-white p-2 rounded-xl text-center font-black outline-none border border-slate-100">
+                <button onclick="this.parentElement.remove()" class="text-slate-300 hover:text-red-500"><i class="fas fa-minus-circle"></i></button>
             `;
-            container.appendChild(div);
-            div.querySelectorAll('input').forEach(i => i.oninput = calculate);
-            calculate();
+            list.appendChild(row);
         };
 
-        window.calculate = () => {
-            let sub = 0;
-            document.querySelectorAll('#items-container > div').forEach(row => {
-                const q = parseFloat(row.querySelector('.i-qty').value) || 0;
-                const p = parseFloat(row.querySelector('.i-price').value) || 0;
-                sub += (q * p);
-            });
-            const final = state.isTaxSeparate ? Math.floor(sub * 1.1) : sub;
-            document.getElementById('total-display').innerText = final.toLocaleString() + '원';
-            return { sub, final };
-        };
-
-        // Firestore Syncing
-        async function syncData() {
-            if (!state.user) return;
-            // Rule 1 & 2: Simple Collection Query
-            const path = collection(state.db, 'artifacts', state.appId, 'users', state.user.uid, 'estimates');
-            onSnapshot(path, (snap) => {
-                const list = document.getElementById('history-list');
-                list.innerHTML = '';
-                if(snap.empty) {
-                    list.innerHTML = '<div class="text-center py-20 text-slate-300 text-sm">기록이 없습니다.</div>';
-                    return;
-                }
-                snap.forEach(docSnap => {
-                    const d = docSnap.data();
-                    const item = document.createElement('div');
-                    item.className = "p-4 bg-slate-50 rounded-2xl border border-slate-100 cursor-pointer hover:border-blue-500 hover:bg-white transition-all group";
-                    item.onclick = () => loadItem(docSnap.id, d);
-                    item.innerHTML = `
-                        <div class="flex justify-between items-start">
-                            <div class="font-bold text-slate-800 text-sm">${d.client || '이름 없음'}</div>
-                            <div class="text-[9px] font-black text-slate-300 uppercase">${d.date}</div>
-                        </div>
-                        <div class="flex justify-between items-end mt-2">
-                            <div class="text-[10px] text-blue-500 font-bold">${d.items?.length || 0}개 항목</div>
-                            <button onclick="event.stopPropagation(); deleteItem('${docSnap.id}')" class="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all">
-                                <i class="fas fa-trash-alt text-xs"></i>
-                            </button>
-                        </div>
-                    `;
-                    list.appendChild(item);
-                });
-            }, (err) => console.error("Firestore Sync Error:", err));
-        }
-
-        function loadItem(id, data) {
-            state.activeId = id;
-            document.getElementById('client-name').value = data.client;
-            document.getElementById('doc-date').value = data.date;
-            toggleTax(data.isTaxSeparate);
-            document.getElementById('items-container').innerHTML = '';
-            data.items.forEach(i => addNewRow(i.n, i.q, i.p));
-            document.getElementById('save-trigger').innerHTML = '<i class="fas fa-sync mr-2"></i> 클라우드 업데이트';
-        }
-
-        window.handleCloudSave = async () => {
-            if (!state.user) return;
-            const btn = document.getElementById('save-trigger');
+        window.saveToCloud = async () => {
+            if (!user) return;
+            const btn = document.getElementById('save-btn');
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 처리 중...';
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> 저장 중...';
 
-            const payload = {
-                client: document.getElementById('client-name').value,
-                date: document.getElementById('doc-date').value,
-                isTaxSeparate: state.isTaxSeparate,
-                items: Array.from(document.querySelectorAll('#items-container > div')).map(r => ({
-                    n: r.querySelector('.i-name').value,
-                    q: r.querySelector('.i-qty').value,
-                    p: r.querySelector('.i-price').value
-                })),
-                updatedAt: serverTimestamp()
-            };
+            const items = Array.from(document.querySelectorAll('#items-list > div')).map(div => ({
+                name: div.querySelector('input[type="text"]').value,
+                val: div.querySelector('input[type="number"]').value
+            }));
 
             try {
-                if (state.activeId) {
-                    await updateDoc(doc(state.db, 'artifacts', state.appId, 'users', state.user.uid, 'estimates', state.activeId), payload);
-                } else {
-                    const newDoc = await addDoc(collection(state.db, 'artifacts', state.appId, 'users', state.user.uid, 'estimates'), payload);
-                    state.activeId = newDoc.id;
-                }
-                btn.innerHTML = '<i class="fas fa-check mr-2"></i> 저장 완료';
+                // Rule 1 준수된 경로
+                await addDoc(collection(db, 'artifacts', currentAppId, 'users', user.uid, 'estimates'), {
+                    client: document.getElementById('client').value || '이름 없음',
+                    date: document.getElementById('date').value || new Date().toISOString().split('T')[0],
+                    items: items,
+                    timestamp: serverTimestamp()
+                });
+                btn.innerHTML = '<i class="fas fa-check"></i> 저장 완료';
                 setTimeout(() => {
                     btn.disabled = false;
-                    btn.innerHTML = state.activeId ? '<i class="fas fa-sync mr-2"></i> 클라우드 업데이트' : '<i class="fas fa-cloud-upload-alt mr-2"></i> 클라우드 저장';
+                    btn.innerHTML = '<i class="fas fa-cloud-upload-alt mr-2"></i> 클라우드 저장';
                 }, 2000);
-            } catch (err) {
-                alert("저장 실패: " + err.message);
+            } catch (e) {
+                console.error(e);
+                alert("저장 권한이 없거나 연결이 끊겼습니다.");
                 btn.disabled = false;
                 btn.innerText = "다시 시도";
             }
         };
 
-        window.deleteItem = async (id) => {
-            if (confirm('정말 삭제하시겠습니까?')) {
-                await deleteDoc(doc(state.db, 'artifacts', state.appId, 'users', state.user.uid, 'estimates', id));
-                if (state.activeId === id) {
-                    state.activeId = null;
-                    document.getElementById('client-name').value = '';
-                    document.getElementById('items-container').innerHTML = '';
-                    addNewRow();
+        function loadHistory() {
+            if (!user) return;
+            // Rule 1 & 2: 간단한 쿼리 후 메모리에서 처리
+            const q = query(collection(db, 'artifacts', currentAppId, 'users', user.uid, 'estimates'));
+            onSnapshot(q, (snap) => {
+                const container = document.getElementById('history-container');
+                container.innerHTML = '';
+                if (snap.empty) {
+                    container.innerHTML = '<div class="text-center py-10 text-slate-300 text-sm">저장된 내역이 없습니다.</div>';
+                    return;
                 }
+                snap.forEach(docSnap => {
+                    const d = docSnap.data();
+                    const card = document.createElement('div');
+                    card.className = "p-4 bg-white border border-slate-100 rounded-2xl hover:shadow-md transition-all group relative";
+                    card.innerHTML = `
+                        <div class="text-xs text-slate-400 font-bold mb-1">${d.date}</div>
+                        <div class="font-black text-slate-800">${d.client}</div>
+                        <button onclick="deleteData('${docSnap.id}')" class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all">
+                            <i class="fas fa-trash-alt text-xs"></i>
+                        </button>
+                    `;
+                    container.appendChild(card);
+                });
+            }, (err) => {
+                console.error("Snapshot Error:", err);
+            });
+        }
+
+        window.deleteData = async (id) => {
+            if(confirm('이 기록을 영구 삭제할까요?')) {
+                await deleteDoc(doc(db, 'artifacts', currentAppId, 'users', user.uid, 'estimates', id));
             }
         };
 
-        window.onload = startSystem;
+        // 초기 시작
+        window.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('date').value = new Date().toISOString().split('T')[0];
+            initSystem();
+        });
     </script>
+
+    <style>
+        @keyframes slide-up {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-up { animation: slide-up 0.3s ease-out forwards; }
+    </style>
 </body>
 </html>
