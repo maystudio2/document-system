@@ -197,11 +197,18 @@
                                         <td class="border border-black bg-slate-50 font-black text-center w-14">성 명</td>
                                         <td class="border border-black text-center relative py-2 overflow-visible">
                                             <span class="font-bold mr-6">정윤희</span><span class="text-[10px]">(인)</span>
-                                            <div class="absolute top-1/2 right-1 -translate-y-1/2 w-10 h-10 border-2 border-red-500/30 rounded-full flex items-center justify-center text-[8px] text-red-500 font-bold rotate-12 pointer-events-none">메이스튜디오</div>
+                                            <!-- stamp.png 이미지 적용 -->
+                                            <img src="stamp.png" alt="도장" class="absolute top-1/2 right-1 -translate-y-1/2 w-10 h-10 object-contain pointer-events-none z-20 rotate-12 opacity-95" onerror="this.style.display='none'">
                                         </td>
                                     </tr>
                                     <tr><td class="border border-black bg-slate-50 font-black text-center py-2">주 소</td><td colSpan="3" class="border border-black text-left px-3 text-[10px] py-2 leading-tight">창원시 성산구 중앙대로 33 대흥인터빌 519호</td></tr>
-                                    <tr><td class="border border-black bg-slate-50 font-black text-center py-2">연락처</td><td class="border border-black text-center font-bold py-2 text-[11px]">010-3560-5859</td><td class="border border-black bg-slate-50 font-black text-center">이메일</td><td class="border border-black text-center text-[10px] py-1 font-medium">contact@maystudio.kr</td></tr>
+                                    <tr>
+                                        <td class="border border-black bg-slate-50 font-black text-center py-2">연락처</td>
+                                        <td class="border border-black text-center font-bold py-2 text-[11px]">010-3560-5859</td>
+                                        <td class="border border-black bg-slate-50 font-black text-center">이메일</td>
+                                        <!-- 이메일 @에서 줄바꿈 적용 -->
+                                        <td class="border border-black text-center text-[10px] py-1 font-medium leading-tight">contact<br>@maystudio.kr</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -239,13 +246,12 @@
 
                 <!-- Footer Section -->
                 <div class="mt-auto">
-                    <!-- Updated Bank Info Section: Less aggressive, more balanced -->
-                    <div class="p-4 border-y border-slate-200 flex items-center justify-between mb-8 opacity-80">
+                    <!-- Project Management 문구 제거 및 계좌 정보 중앙 정렬형태로 수정 -->
+                    <div class="p-4 border-y border-slate-200 flex items-center justify-center mb-8 opacity-80 text-center">
                         <div class="flex items-center gap-4">
                             <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-r pr-4 border-slate-200">Payment Info</span>
                             <span class="text-sm font-bold text-slate-700">농협 302-1456-7890-11 (예금주: 정윤희)</span>
                         </div>
-                        <div class="text-[9px] text-slate-400 italic">MAY STUDIO Project Management</div>
                     </div>
                     
                     <div class="grid grid-cols-1 gap-6">
@@ -461,7 +467,6 @@
         window.handleDelete = async (e, docId) => {
             e.stopPropagation(); // 카드 클릭(불러오기) 방지
             if (!currentUser) return;
-            // 인라인 삭제 확인 대신 즉시 삭제 후 알림
             try {
                 await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'invoices', docId));
                 if (currentDocId === docId) createNewDoc(); // 현재 편집 중인 문서면 초기화
@@ -565,7 +570,7 @@
                             </div>
                         </div>
                     `).join('');
-                    lucide.createIcons(); // 아이콘 갱신
+                    lucide.createIcons();
                 });
             }
         });
