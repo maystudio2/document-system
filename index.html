@@ -422,10 +422,9 @@
             const type = document.getElementById('doc-type').value;
             const rawDate = document.getElementById('invoice-date').value || new Date().toISOString().split('T')[0];
             const dateStr = rawDate.replace(/-/g, '').slice(2);
-            // Updated naming convention: [메이스튜디오]날짜_클라이언트_구분
             document.getElementById('live-title-preview').textContent = `[메이스튜디오]${dateStr}_${client}_${type}`;
             document.getElementById('p-client').textContent = client;
-            document.getElementById('p-doc-type').textContent = type.split('').join(' '); // Add spacing for aesthetics
+            document.getElementById('p-doc-type').textContent = type.split('').join(' '); 
         };
 
         window.handleSave = async () => {
@@ -456,6 +455,19 @@
                 showNotify("보관함에 성공적으로 저장되었습니다.");
             } catch (e) { 
                 showNotify("저장 중 오류 발생", "error"); 
+            }
+        };
+
+        window.handleDelete = async (e, docId) => {
+            e.stopPropagation(); // 카드 클릭(불러오기) 방지
+            if (!currentUser) return;
+            // 인라인 삭제 확인 대신 즉시 삭제 후 알림
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'invoices', docId));
+                if (currentDocId === docId) createNewDoc(); // 현재 편집 중인 문서면 초기화
+                showNotify("문서가 보관함에서 삭제되었습니다.");
+            } catch (e) {
+                showNotify("삭제 중 오류 발생", "error");
             }
         };
 
@@ -542,14 +554,18 @@
                         return;
                     }
                     repo.innerHTML = savedDocs.sort((a,b) => b.updatedAt - a.updatedAt).map(d => `
-                        <div onclick="loadDoc('${d.id}')" class="p-4 bg-white border border-slate-200 rounded-2xl cursor-pointer hover:border-blue-500 hover:shadow-md transition-all">
-                            <h4 class="font-bold text-sm text-slate-800 truncate">${d.clientName}</h4>
+                        <div onclick="loadDoc('${d.id}')" class="group relative p-4 bg-white border border-slate-200 rounded-2xl cursor-pointer hover:border-blue-500 hover:shadow-md transition-all">
+                            <button onclick="handleDelete(event, '${d.id}')" class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 p-1 transition-all">
+                                <i data-lucide="x-circle" class="w-4 h-4"></i>
+                            </button>
+                            <h4 class="font-bold text-sm text-slate-800 truncate pr-6">${d.clientName}</h4>
                             <div class="flex justify-between items-center mt-2">
                                 <p class="text-[10px] font-bold text-blue-600">${d.docType || '견적서'}</p>
                                 <p class="text-[10px] font-black text-slate-400">₩${d.totalAmount?.toLocaleString()}</p>
                             </div>
                         </div>
                     `).join('');
+                    lucide.createIcons(); // 아이콘 갱신
                 });
             }
         });
