@@ -14,85 +14,101 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
+        /* 로딩 화면 강제 숨김 방지 */
+        #loading.hidden { display: none !important; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
     <div id="app">
         <!-- 로딩 스피너 -->
-        <div id="loading" class="fixed inset-0 flex items-center justify-center bg-white z-50">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div id="loading" class="fixed inset-0 flex flex-col items-center justify-center bg-white z-[100]">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+            <p class="text-slate-500 text-sm">시스템을 불러오는 중...</p>
         </div>
 
         <!-- 로그인 섹션 -->
         <div id="login-section" class="hidden min-h-screen flex items-center justify-center p-4">
-            <div class="max-w-md w-full glass-morphism p-8 rounded-2xl shadow-xl">
+            <div class="max-w-md w-full glass-morphism p-8 rounded-2xl shadow-xl border border-slate-200">
                 <div class="text-center mb-8">
-                    <h1 class="text-3xl font-bold text-slate-800">MayStudio</h1>
-                    <p class="text-slate-500 mt-2">관리자 계정으로 로그인하세요</p>
+                    <h1 class="text-3xl font-black text-slate-800 tracking-tight">MayStudio</h1>
+                    <p class="text-slate-500 mt-2 font-medium">관리자 전용 로그인</p>
                 </div>
-                <form id="login-form" class="space-y-4">
+                <form id="login-form" class="space-y-5">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">이메일</label>
-                        <input type="email" id="email" class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="contact@maystudio.kr" required>
+                        <label class="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">이메일 계정</label>
+                        <input type="email" id="email" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-100 outline-none transition font-medium" placeholder="contact@maystudio.kr" required>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">비밀번호</label>
-                        <input type="password" id="password" class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="••••••••" required>
+                        <label class="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">비밀번호</label>
+                        <input type="password" id="password" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-100 outline-none transition font-medium" placeholder="••••••••" required>
                     </div>
-                    <button type="submit" id="login-submit-btn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition shadow-lg shadow-blue-200">
-                        로그인
+                    <button type="submit" id="login-submit-btn" class="w-full bg-slate-900 text-white py-4 rounded-xl font-bold hover:bg-slate-800 transition shadow-xl active:scale-[0.98]">
+                        로그인하기
                     </button>
                 </form>
-                <div id="login-error" class="mt-4 text-red-500 text-sm text-center hidden"></div>
+                <div id="login-error" class="mt-4 p-3 bg-red-50 text-red-500 text-xs text-center rounded-lg font-bold hidden"></div>
             </div>
         </div>
 
         <!-- 메인 대시보드 섹션 -->
         <div id="dashboard-section" class="hidden min-h-screen">
-            <!-- 네비게이션 바 -->
-            <nav class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-40">
+            <nav class="bg-white border-b border-slate-100 px-6 py-4 flex justify-between items-center sticky top-0 z-40 shadow-sm">
                 <div class="flex items-center space-x-3">
-                    <div class="bg-blue-600 text-white p-2 rounded-lg">
-                        <i class="fas fa-layer-group"></i>
+                    <div class="bg-blue-600 text-white p-2 rounded-lg shadow-lg shadow-blue-200">
+                        <i class="fas fa-layer-group text-sm"></i>
                     </div>
-                    <span class="text-xl font-bold text-slate-800">MayStudio Admin</span>
+                    <span class="text-lg font-black text-slate-800 tracking-tight">MayStudio <span class="font-light text-slate-400 ml-1">Portal</span></span>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <span id="user-display" class="text-sm text-slate-600 hidden md:inline"></span>
-                    <button id="logout-btn" class="px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition">
-                        로그아웃 <i class="fas fa-sign-out-alt ml-1"></i>
+                    <div class="hidden md:flex flex-col items-end mr-2">
+                        <span id="user-display" class="text-xs font-bold text-slate-800"></span>
+                        <span class="text-[10px] text-green-500 font-bold">● 접속중</span>
+                    </div>
+                    <button id="logout-btn" class="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition">
+                        <i class="fas fa-sign-out-alt text-lg"></i>
                     </button>
                 </div>
             </nav>
 
             <main class="max-w-6xl mx-auto p-6">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                        <p class="text-slate-500 text-sm">등록된 프로젝트</p>
-                        <h3 class="text-2xl font-bold text-slate-800 mt-1" id="project-count">0</h3>
+                <!-- 상단 통계 카드 -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                    <div class="bg-white p-7 rounded-[24px] border border-slate-100 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 p-4 opacity-5"><i class="fas fa-file-alt text-6xl"></i></div>
+                        <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">총 관리 데이터</p>
+                        <h3 class="text-3xl font-black text-slate-800 mt-1" id="project-count">0</h3>
                     </div>
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                        <p class="text-slate-500 text-sm">최근 접속</p>
-                        <h3 class="text-2xl font-bold text-slate-800 mt-1" id="last-access-time">-</h3>
+                    <div class="bg-white p-7 rounded-[24px] border border-slate-100 shadow-sm">
+                        <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">최근 로그인</p>
+                        <h3 class="text-xl font-bold text-slate-800 mt-1" id="last-access-time">-</h3>
                     </div>
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                        <p class="text-slate-500 text-sm">시스템 상태</p>
-                        <h3 class="text-2xl font-bold text-green-500 mt-1">정상</h3>
+                    <div class="bg-white p-7 rounded-[24px] border border-blue-600 shadow-sm bg-blue-600 text-white">
+                        <p class="text-[11px] font-black text-blue-200 uppercase tracking-widest mb-1">시스템 상태</p>
+                        <h3 class="text-xl font-bold mt-1 flex items-center gap-2">
+                            <span class="w-2 h-2 bg-white rounded-full animate-pulse"></span> 정상 작동중
+                        </h3>
                     </div>
                 </div>
 
-                <!-- 메모/메모장 기능 -->
-                <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                    <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-                        <h2 class="font-bold text-lg text-slate-800">관리자 메모</h2>
-                        <button id="add-note-btn" class="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-md text-sm font-medium hover:bg-blue-100">
-                            새 메모 추가
+                <!-- 메모 섹션 -->
+                <section class="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden">
+                    <div class="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+                        <div>
+                            <h2 class="font-black text-xl text-slate-800">관리자 전용 메모장</h2>
+                            <p class="text-xs text-slate-400 font-medium mt-1">Firestore 실시간 클라우드 동기화</p>
+                        </div>
+                        <button id="add-note-btn" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-100">
+                            <i class="fas fa-plus mr-2"></i> 새 메모
                         </button>
                     </div>
-                    <div id="notes-container" class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- 메모 아이템이 여기에 렌더링됨 -->
+                    <div id="notes-container" class="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 min-h-[300px]">
+                        <!-- 데이터 로딩 상태 -->
+                        <div class="col-span-full flex flex-col items-center justify-center py-20 text-slate-300">
+                            <i class="fas fa-spinner animate-spin text-2xl mb-4"></i>
+                            <p class="text-sm font-medium">데이터를 실시간으로 동기화하는 중입니다...</p>
+                        </div>
                     </div>
-                </div>
+                </section>
             </main>
         </div>
     </div>
@@ -100,81 +116,58 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, onSnapshot, addDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, onSnapshot, addDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase 설정
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
+        // 환경 변수 안전 처리
+        const getFirebaseConfig = () => {
+            try { return JSON.parse(__firebase_config); }
+            catch (e) { return { apiKey: "", authDomain: "", projectId: "", storageBucket: "", messagingSenderId: "", appId: "" }; }
+        };
+
+        const config = getFirebaseConfig();
+        const app = initializeApp(config);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'maystudio-admin';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'maystudio-v2';
 
-        // DOM 요소
         const loadingScreen = document.getElementById('loading');
         const loginSection = document.getElementById('login-section');
         const dashboardSection = document.getElementById('dashboard-section');
         const loginForm = document.getElementById('login-form');
         const loginError = document.getElementById('login-error');
         const loginSubmitBtn = document.getElementById('login-submit-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        const userDisplay = document.getElementById('user-display');
         const notesContainer = document.getElementById('notes-container');
-        const projectCountEl = document.getElementById('project-count');
 
-        // 초기 인증 처리
-        const initApp = async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                }
-            } catch (err) {
-                console.error("Auth Init Error:", err);
-            }
-        };
-
-        initApp();
-
-        // 인증 상태 리스너
+        // 상태 관리 함수
+        const hideLoading = () => loadingScreen.classList.add('hidden');
+        
+        // 인증 상태 리스너 (가장 중요)
         onAuthStateChanged(auth, (user) => {
-            loadingScreen.classList.add('hidden');
-            if (user) {
-                // 지정된 계정만 허용
-                if (user.email === 'contact@maystudio.kr') {
-                    showDashboard(user);
-                } else {
-                    // 비인가 계정 접근 시 로그아웃
-                    signOut(auth);
-                }
+            console.log("Auth State Changed:", user ? user.email : "Logged Out");
+            hideLoading(); // 어떤 상태든 로딩은 숨김
+
+            if (user && user.email === 'contact@maystudio.kr') {
+                dashboardSection.classList.remove('hidden');
+                loginSection.classList.add('hidden');
+                document.getElementById('user-display').textContent = user.email;
+                document.getElementById('last-access-time').textContent = new Date().toLocaleTimeString('ko-KR');
+                loadNotes(user.uid);
             } else {
-                showLogin();
+                loginSection.classList.remove('hidden');
+                dashboardSection.classList.add('hidden');
             }
         });
 
-        function showLogin() {
-            loginSection.classList.remove('hidden');
-            dashboardSection.classList.add('hidden');
-            loginSubmitBtn.disabled = false;
-            loginSubmitBtn.innerText = "로그인";
-        }
-
-        function showDashboard(user) {
-            loginSection.classList.add('hidden');
-            dashboardSection.classList.remove('hidden');
-            userDisplay.textContent = user.email;
-            document.getElementById('last-access-time').textContent = new Date().toLocaleTimeString();
-            loadNotes(user.uid);
-        }
-
-        // 로그인 핸들러
+        // 로그인 처리
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
             
             loginError.classList.add('hidden');
             
-            // 1차 필터링: 지정된 정보 확인
+            // 1차 정보 대조 (요청하신 계정 정보)
             if (email !== 'contact@maystudio.kr' || password !== 'maystudio@!') {
                 loginError.textContent = "로그인 정보가 일치하지 않습니다.";
                 loginError.classList.remove('hidden');
@@ -183,84 +176,99 @@
 
             try {
                 loginSubmitBtn.disabled = true;
-                loginSubmitBtn.innerText = "인증 중...";
+                loginSubmitBtn.textContent = "인증 처리 중...";
                 
-                // Firebase Auth 로그인 시도
                 await signInWithEmailAndPassword(auth, email, password);
-                
             } catch (err) {
-                // Firebase에 계정이 없거나 인증 실패 시 동일한 메시지 출력
+                console.error("Login Error:", err.code);
                 loginError.textContent = "로그인 정보가 일치하지 않습니다.";
                 loginError.classList.remove('hidden');
                 loginSubmitBtn.disabled = false;
-                loginSubmitBtn.innerText = "로그인";
-                console.error("Firebase Auth Error:", err.code); 
+                loginSubmitBtn.textContent = "로그인하기";
             }
         });
 
-        // 로그아웃 핸들러
-        logoutBtn.addEventListener('click', () => signOut(auth));
+        // 로그아웃
+        document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
-        // Firestore 데이터 로드 (RULE 1 & 2 준수)
+        // Firestore 실시간 로드
         function loadNotes(uid) {
-            const notesCol = collection(db, 'artifacts', appId, 'public', 'data', 'notes');
+            // Rule 1: /artifacts/{appId}/public/data/{collectionName} 경로 사용
+            const notesCol = collection(db, 'artifacts', appId, 'public', 'data', 'admin_notes');
             
             onSnapshot(notesCol, (snapshot) => {
                 notesContainer.innerHTML = '';
-                projectCountEl.textContent = snapshot.size;
+                document.getElementById('project-count').textContent = snapshot.size;
                 
                 if (snapshot.empty) {
-                    notesContainer.innerHTML = `<div class="col-span-full text-center py-10 text-slate-400">등록된 메모가 없습니다.</div>`;
+                    notesContainer.innerHTML = `
+                        <div class="col-span-full flex flex-col items-center justify-center py-20 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-100">
+                            <p class="text-slate-400 font-bold text-sm">보관된 메모가 없습니다.</p>
+                        </div>`;
                     return;
                 }
 
                 snapshot.docs.forEach(docSnap => {
                     const data = docSnap.data();
+                    const dateStr = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '방금 전';
+                    
                     const card = document.createElement('div');
-                    card.className = "p-4 border border-slate-100 rounded-lg bg-slate-50 flex justify-between items-start";
+                    card.className = "group p-6 bg-white border border-slate-100 rounded-[20px] shadow-sm hover:shadow-xl hover:border-blue-200 transition-all relative flex flex-col justify-between";
                     card.innerHTML = `
                         <div>
-                            <p class="font-medium text-slate-800">${data.content}</p>
-                            <span class="text-xs text-slate-400">${data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleString() : '방금 전'}</span>
+                            <div class="w-8 h-1 bg-blue-100 rounded-full mb-4 group-hover:bg-blue-600 transition-colors"></div>
+                            <p class="text-slate-700 font-bold leading-relaxed mb-4">${data.content}</p>
                         </div>
-                        <button onclick="deleteNote('${docSnap.id}')" class="text-slate-300 hover:text-red-500 transition">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
+                        <div class="flex justify-between items-center mt-4 pt-4 border-t border-slate-50">
+                            <span class="text-[10px] font-black text-slate-300 uppercase">${dateStr}</span>
+                            <button onclick="deleteNote('${docSnap.id}')" class="text-slate-200 hover:text-red-500 transition-colors">
+                                <i class="fas fa-trash-alt text-xs"></i>
+                            </button>
+                        </div>
                     `;
                     notesContainer.appendChild(card);
                 });
             }, (error) => {
                 console.error("Firestore Error:", error);
+                notesContainer.innerHTML = `<p class="col-span-full text-center text-red-400 py-10 text-xs font-bold">데이터를 불러올 권한이 없거나 설정이 잘못되었습니다.</p>`;
             });
         }
 
         // 메모 추가
         document.getElementById('add-note-btn').addEventListener('click', async () => {
-            const content = prompt("추가할 메모 내용을 입력하세요:");
-            if (!content || !auth.currentUser) return;
+            const content = prompt("새로운 메모 내용을 입력하세요:");
+            if (!content) return;
 
             try {
-                const notesCol = collection(db, 'artifacts', appId, 'public', 'data', 'notes');
+                const notesCol = collection(db, 'artifacts', appId, 'public', 'data', 'admin_notes');
                 await addDoc(notesCol, {
                     content: content,
                     createdAt: serverTimestamp(),
                     author: auth.currentUser.uid
                 });
             } catch (err) {
-                console.error("Add Note Error:", err);
+                alert("저장 실패: 권한이 없습니다.");
             }
         });
 
-        // 메모 삭제
+        // 삭제 전역 등록
         window.deleteNote = async (id) => {
-            if (!confirm('정말 삭제하시겠습니까?')) return;
+            if (!confirm('메모를 삭제하시겠습니까?')) return;
             try {
-                const noteDoc = doc(db, 'artifacts', appId, 'public', 'data', 'notes', id);
+                const noteDoc = doc(db, 'artifacts', appId, 'public', 'data', 'admin_notes', id);
                 await deleteDoc(noteDoc);
             } catch (err) {
-                console.error("Delete Error:", err);
+                alert("삭제 실패");
             }
         };
+
+        // 안전 장치: 5초 후에도 로딩이 안 사라지면 강제 실행
+        setTimeout(() => {
+            if (!loadingScreen.classList.contains('hidden')) {
+                console.warn("Loading timeout - forcing display");
+                hideLoading();
+            }
+        }, 5000);
 
     </script>
 </body>
